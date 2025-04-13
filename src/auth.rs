@@ -12,7 +12,7 @@ struct NewUser {
 }
 
 #[rocket::post("/signup", data = "<user>")]
-async fn signup(db: &State<Surreal<Any>>, user: Json<NewUser>) -> &'static str {
+pub async fn route_signup(db: &State<Surreal<Any>>, user: Json<NewUser>) -> &'static str {
     let user = user.clone();
     let mut _result = db
         .query(

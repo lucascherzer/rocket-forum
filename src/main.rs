@@ -3,6 +3,8 @@ pub mod config;
 pub mod db;
 pub mod error;
 
+use crate::auth::route_signup;
+
 use config::get_config;
 use db::get_db;
 use rocket::State;
@@ -41,5 +43,5 @@ async fn rocket() -> _ {
 
     rocket::build()
         .manage(db)
-        .mount("/", rocket::routes![index])
+        .mount("/", rocket::routes![index, route_signup])
 }
