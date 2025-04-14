@@ -89,7 +89,9 @@ pub(crate) async fn route_signup(
                 INSERT INTO Users {{
                     username: $username,
                     password: crypto::argon2::generate($password),
-                    created: time::now()
+                    created: time::now(),
+                    user_id: rand::uuid::v4()
+                }}
                 "#,
             )
             .bind(("username", user.username.clone()))
