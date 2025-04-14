@@ -3,6 +3,8 @@ pub mod config;
 pub mod db;
 pub mod error;
 
+extern crate rocket;
+
 use crate::auth::route_signup;
 
 use config::get_config;

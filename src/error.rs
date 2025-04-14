@@ -7,6 +7,8 @@ use thiserror::Error;
 pub enum Error {
     #[error("database error")]
     Db,
+    #[error("tried to register an already taken username ")]
+    UsernameTaken,
 }
 
 impl<'r> Responder<'r, 'static> for Error {
