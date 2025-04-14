@@ -7,6 +7,7 @@ extern crate rocket;
 
 use crate::auth::route_signup;
 
+use auth::route_login;
 use config::get_config;
 use db::get_db;
 use rocket::State;
@@ -43,7 +44,8 @@ async fn index(db: &State<Surreal<Any>>) -> String {
 async fn rocket() -> _ {
     let db = init().await.expect("Failed to connect to database");
 
+    // TODO: read key from .env for release builds
     rocket::build()
         .manage(db)
-        .mount("/", rocket::routes![index, route_signup])
+        .mount("/", rocket::routes![index, route_signup, route_login])
 }
