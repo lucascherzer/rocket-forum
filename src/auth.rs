@@ -141,7 +141,7 @@ async fn login(db: &Surreal<Any>, user: UserPassword) -> Result<Uuid, AuthError>
             r#"
             SELECT user_id FROM Users WHERE
                 username = $username AND
-                password = crypto::argon2::compare($password, password)
+                crypto::argon2::compare(password, $password)
             "#,
         )
         .bind(("username", user.username.clone()))
