@@ -127,7 +127,7 @@ async fn register_session(
         .bind(("user_id", user_id))
         .bind(("session_id", session_id))
         .await
-        .map_err(|_| AuthError::DatabaseError("Error registering session"));
+        .map_err(|_| AuthError::SessionRegistrationError("Error registering session"));
     Ok(())
 }
 
