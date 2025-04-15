@@ -4,7 +4,7 @@ use rocket::{
     response::Redirect,
     serde::{Deserialize, Serialize, json::Json, uuid},
 };
-use surrealdb::{Surreal, Uuid, engine::any::Any};
+use surrealdb::{RecordId, Surreal, Uuid, engine::any::Any};
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
@@ -41,11 +41,11 @@ struct UserSession {
 #[serde(crate = "rocket::serde")]
 /// We use this to represent the DB return type
 /// ```json
-/// {"user_id": "uuid"}
+/// {"id": "uuid"}
 /// ```
 /// This is what the DB returns for our query that validates the login
 struct UserWrapper {
-    user_id: Uuid,
+    id: RecordId,
 }
 
 #[derive(Responder)]
@@ -62,7 +62,7 @@ pub(crate) enum AuthError {
 
     #[response(status = 500)]
     /// An error occurred while registering the session
-    SessionRegistrationError(&'static str),
+    SessionRegistrationError(String),
 }
 
 #[rocket::post("/signup", data = "<user>")]
@@ -86,11 +86,10 @@ pub(crate) async fn route_signup(
         if let Ok(_) = db
             .query(
                 r#"
-                INSERT INTO Users {{
+                CREATE Users:uuid() CONTENT {{
                     username: $username,
                     password: crypto::argon2::generate($password),
                     created: time::now(),
-                    user_id: rand::uuid::v4()
                 }}
                 "#,
             )
@@ -111,26 +110,16 @@ pub(crate) async fn route_signup(
     }
 }
 
-async fn register_session(
-    db: &Surreal<Any>,
-    session_id: Uuid,
-    user_id: Uuid,
-) -> Result<(), AuthError> {
-    let query = db
-        .query(
-            r#"
-        INSERT INTO Sessions {
-            created: time::now(),
-            user_id: $user_id,
-            session_id: $session_id
-        }
-        "#,
-        )
-        .bind(("user_id", user_id))
-        .bind(("session_id", session_id))
+async fn register_session(db: &Surreal<Any>, user_id: RecordId) -> Result<Uuid, AuthError> {
+    dbg!(&user_id);
+    let sess: Uuid = db
+        .run("fn::new_session")
+        .args(user_id)
         .await
-        .map_err(|_| AuthError::SessionRegistrationError("Error registering session"));
-    Ok(())
+        .map_err(|err| {
+            AuthError::SessionRegistrationError(format!("Error registering session {}", err))
+        })?;
+    Ok(sess)
 }
 
 /// Attempts a login.
@@ -139,7 +128,7 @@ async fn login(db: &Surreal<Any>, user: UserPassword) -> Result<Uuid, AuthError>
     let query = db
         .query(
             r#"
-            SELECT user_id FROM Users WHERE
+            SELECT id FROM Users WHERE
                 username = $username AND
                 crypto::argon2::compare(password, $password)
             "#,
@@ -149,16 +138,20 @@ async fn login(db: &Surreal<Any>, user: UserPassword) -> Result<Uuid, AuthError>
         .await;
     match query {
         Ok(mut result) => {
+            dbg!(&result);
             if let Ok(user_id) = result.take::<Vec<UserWrapper>>(0) {
-                let session_uuid = uuid::Uuid::new_v4();
+                dbg!(&user_id);
                 // At this point, we have a valid login. We now register a new
                 // session.
                 let user_id = user_id
                     .first()
-                    .ok_or(AuthError::DatabaseError("An error occured while loggin in"))?
-                    .user_id;
-                register_session(&db, session_uuid, user_id).await?;
-                return Ok(session_uuid);
+                    .ok_or(AuthError::DatabaseError(
+                        "An error occured while logging in(1)",
+                    ))?
+                    .id
+                    .clone();
+                let session_id = register_session(&db, user_id).await?;
+                return Ok(session_id);
             } else {
                 Err(AuthError::InvalidInput("Wrong username or password"))
             }
