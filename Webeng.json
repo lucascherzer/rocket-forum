@@ -1,0 +1,53 @@
+{
+  "v": 6,
+  "name": "Webeng",
+  "folders": [],
+  "requests": [
+    {
+      "v": "11",
+      "endpoint": "http://127.0.0.1:8000/signup",
+      "name": "User Signup",
+      "params": [],
+      "headers": [],
+      "method": "POST",
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "preRequestScript": "",
+      "testScript": "",
+      "body": {
+        "contentType": "application/json",
+        "body": "{\n  \"username\": \"Testuser20\",\n  \"password\": \"password\"\n}"
+      },
+      "requestVariables": [],
+      "responses": {}
+    },
+    {
+      "v": "11",
+      "endpoint": "http://127.0.0.1:8000/login",
+      "name": "User Login",
+      "params": [],
+      "headers": [],
+      "method": "POST",
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "preRequestScript": "",
+      "testScript": "",
+      "body": {
+        "contentType": "application/json",
+        "body": "{\n  \"username\": \"Testuser20\",\n  \"password\": \"password\"\n}"
+      },
+      "requestVariables": [],
+      "responses": {}
+    }
+  ],
+  "headers": [],
+  "auth": {
+    "authType": "none",
+    "authActive": true
+  },
+  "_ref_id": "coll_m9fzwn6z_2de61eb8-c7bf-4c99-b244-b588a337365b"
+}
