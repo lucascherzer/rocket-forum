@@ -1,8 +1,9 @@
 use rocket::{
     Responder, State,
-    http::{Cookie, CookieJar},
+    http::{self, Cookie, CookieJar},
+    request::{self, FromRequest},
     response::Redirect,
-    serde::{Deserialize, Serialize, json::Json, uuid},
+    serde::{Deserialize, Serialize, json::Json},
 };
 use surrealdb::{RecordId, Surreal, Uuid, engine::any::Any};
 
@@ -32,9 +33,78 @@ struct CountWrapper {
     count: usize,
 }
 
-struct UserSession {
-    user_id: Uuid,
-    session_id: Uuid,
+// This is not actually never used, its called via its FromRequest impl
+#[allow(dead_code)]
+pub(crate) struct UserSession {
+    pub(crate) user_id: Uuid,
+    pub(crate) session_id: Uuid,
+}
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for UserSession {
+    type Error = AuthError;
+
+    async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
+        dbg!("UserSession::from_request called");
+        let session_id = match request.cookies().get("session_id") {
+            Some(cookie) => {
+                dbg!("Found session_id cookie", cookie.value());
+                match Uuid::parse_str(cookie.value()) {
+                    Ok(id) => {
+                        dbg!("Parsed session_id UUID", &id);
+                        id
+                    }
+                    Err(e) => {
+                        dbg!("Failed to parse session_id UUID", e);
+                        return request::Outcome::Forward(http::Status::BadRequest);
+                    }
+                }
+            }
+            None => {
+                dbg!("No session_id cookie found");
+                return request::Outcome::Forward(http::Status::Unauthorized);
+            }
+        };
+
+        dbg!("Getting DB state");
+        let db = match request.guard::<&State<Surreal<Any>>>().await {
+            request::Outcome::Success(db) => {
+                dbg!("Got DB state");
+                db
+            }
+            _ => {
+                dbg!("Failed to get DB state");
+                return request::Outcome::Forward(http::Status::InternalServerError);
+            }
+        };
+
+        dbg!("Querying user_id from session", &session_id);
+        let user_id_from_session: Result<Vec<Uuid>, _> =
+            db.run("fn::get_userid_from_session").args(session_id).await;
+        dbg!("Query result", &user_id_from_session);
+
+        match user_id_from_session {
+            Ok(user_ids) => {
+                dbg!("Got user_ids", &user_ids);
+                match user_ids.first() {
+                    Some(user_id) => {
+                        dbg!("Found user_id", user_id);
+                        request::Outcome::Success(UserSession {
+                            user_id: user_id.clone(),
+                            session_id,
+                        })
+                    }
+                    None => {
+                        dbg!("No user_id found for session");
+                        request::Outcome::Forward(http::Status::Unauthorized)
+                    }
+                }
+            }
+            Err(e) => {
+                dbg!("Error getting user_id from session", e);
+                request::Outcome::Forward(http::Status::Unauthorized)
+            }
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
@@ -48,7 +118,8 @@ struct UserWrapper {
     id: RecordId,
 }
 
-#[derive(Responder)]
+#[non_exhaustive]
+#[derive(Responder, Debug)]
 pub(crate) enum AuthError {
     #[response(status = 500)]
     /// An error occurred while interacting with the database
@@ -168,15 +239,16 @@ pub(crate) async fn route_login(
     user: Json<UserPassword>,
     cookies: &CookieJar<'_>,
 ) -> Result<Redirect, AuthError> {
-    // TODO: if logged in, redirect to home page
     // TODO: brute force protection
+
+    if cookies.get("session_id").is_some() {
+        return Ok(Redirect::to("/"));
+    }
 
     let session = login(&db, user.into_inner()).await?;
 
     cookies.add(("session_id", session.to_string()));
-    if cookies.get_private("user_id").is_some() {
-        return Ok(Redirect::to("/"));
-    }
+
     Ok(Redirect::to("/"))
     // if not logged in, check if user exists and password is correct
     // if user exists and password is correct, set cookie and redirect to home page
