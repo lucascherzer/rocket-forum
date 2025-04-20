@@ -1,6 +1,9 @@
+use std::str::FromStr;
+
 use rocket::{
     Responder, State,
-    http::{self, Cookie, CookieJar},
+    http::{self, CookieJar},
+    outcome::Outcome,
     request::{self, FromRequest},
     response::Redirect,
     serde::{Deserialize, Serialize, json::Json},
@@ -34,10 +37,11 @@ struct CountWrapper {
 }
 
 // This is not actually never used, its called via its FromRequest impl
+#[derive(Serialize, Debug)]
 #[allow(dead_code)]
 pub(crate) struct UserSession {
-    pub(crate) user_id: Uuid,
-    pub(crate) session_id: Uuid,
+    pub(crate) user_id: RecordId,
+    pub(crate) session_id: RecordId,
 }
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for UserSession {
@@ -48,13 +52,13 @@ impl<'r> FromRequest<'r> for UserSession {
         let session_id = match request.cookies().get("session_id") {
             Some(cookie) => {
                 dbg!("Found session_id cookie", cookie.value());
-                match Uuid::parse_str(cookie.value()) {
+                match RecordId::from_str(format!("Sessions:u'{}'", cookie.value()).as_str()) {
                     Ok(id) => {
-                        dbg!("Parsed session_id UUID", &id);
+                        dbg!("Parsed session_id RecordId", &id);
                         id
                     }
                     Err(e) => {
-                        dbg!("Failed to parse session_id UUID", e);
+                        dbg!("Failed to parse session_id RecordId", e);
                         return request::Outcome::Forward(http::Status::BadRequest);
                     }
                 }
@@ -78,32 +82,40 @@ impl<'r> FromRequest<'r> for UserSession {
         };
 
         dbg!("Querying user_id from session", &session_id);
-        let user_id_from_session: Result<Vec<Uuid>, _> =
-            db.run("fn::get_userid_from_session").args(session_id).await;
+        let user_id_from_session = db
+            .query(
+                r#"
+                LET $session_data = (SELECT user_id FROM Sessions WHERE id = $session_id);
+                IF array::is_empty($session_data) THEN
+                    (RETURN [])
+                END;
+                LET $user_data = (SELECT * FROM $session_data[0].user_id);
+                IF array::is_empty($user_data) OR $user_data[0].id = NONE THEN
+                    (RETURN [])
+                END;
+                RETURN $user_data[0].id;
+                "#,
+            )
+            .bind(("session_id", session_id.clone()))
+            .await;
         dbg!("Query result", &user_id_from_session);
 
-        match user_id_from_session {
-            Ok(user_ids) => {
-                dbg!("Got user_ids", &user_ids);
-                match user_ids.first() {
-                    Some(user_id) => {
-                        dbg!("Found user_id", user_id);
-                        request::Outcome::Success(UserSession {
-                            user_id: user_id.clone(),
-                            session_id,
-                        })
-                    }
-                    None => {
-                        dbg!("No user_id found for session");
-                        request::Outcome::Forward(http::Status::Unauthorized)
-                    }
-                }
-            }
-            Err(e) => {
-                dbg!("Error getting user_id from session", e);
-                request::Outcome::Forward(http::Status::Unauthorized)
-            }
+        if user_id_from_session.is_err() {
+            dbg!(user_id_from_session);
+            return request::Outcome::Forward(http::Status::Unauthorized);
         }
+        let mut response: surrealdb::Response = user_id_from_session.ok().unwrap(); // TODO: handle
+        dbg!("Got db response", &response);
+        if let Some(Some(user_id)) = response.take::<Option<RecordId>>(4).ok() {
+            let sess = UserSession {
+                user_id,
+                session_id,
+            };
+            dbg!("Found valid session with user", &sess);
+            return request::Outcome::Success(sess);
+        }
+        dbg!("No valid session found");
+        return Outcome::Forward(http::Status::InternalServerError);
     }
 }
 
@@ -257,3 +269,15 @@ pub(crate) async fn route_login(
 }
 
 // TODO: Implement route_logout
+//
+#[rocket::get("/logout")]
+pub(crate) async fn route_logout(_user: UserSession, cookies: &CookieJar<'_>) -> &'static str {
+    cookies.remove("session_id");
+    // TODO: delete session from database
+    "logged out"
+}
+
+#[rocket::get("/check")]
+pub(crate) async fn route_check(_user: UserSession) -> &'static str {
+    "You are authenticated"
+}
