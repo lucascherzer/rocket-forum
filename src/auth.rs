@@ -268,8 +268,6 @@ pub(crate) async fn route_login(
     // if user does not exist, return error
 }
 
-// TODO: Implement route_logout
-//
 #[rocket::get("/logout")]
 pub(crate) async fn route_logout(
     user: UserSession,
