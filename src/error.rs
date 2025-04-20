@@ -4,11 +4,10 @@ use rocket::response::{self, Responder, Response};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
     #[error("database error")]
     Db,
-    #[error("tried to register an already taken username ")]
-    UsernameTaken,
 }
 
 impl<'r> Responder<'r, 'static> for Error {
