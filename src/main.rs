@@ -5,13 +5,10 @@ pub mod error;
 
 extern crate rocket;
 
-use crate::auth::UserSession;
-use crate::auth::route_signup;
+use auth::{route_check, route_login, route_logout, route_signup};
 
-use auth::route_login;
 use config::get_config;
 use db::get_db;
-use rocket::State;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
@@ -36,18 +33,16 @@ async fn index() -> &'static str {
     "Hello World"
 }
 
-#[rocket::get("/authenticated")]
-async fn authenticated(_user: UserSession) -> &'static str {
-    "You are authenticated"
-}
-
 #[rocket::launch]
 async fn rocket() -> _ {
     let db = init().await.expect("Failed to connect to database");
 
     // TODO: read key from .env for release builds
-    rocket::build().manage(db).mount(
-        "/",
-        rocket::routes![index, authenticated, route_signup, route_login],
-    )
+    rocket::build()
+        .manage(db)
+        .mount("/", rocket::routes![index])
+        .mount(
+            "/auth",
+            rocket::routes![route_signup, route_login, route_logout, route_check],
+        )
 }

@@ -1,21 +1,20 @@
 {
   "v": 6,
   "name": "Webeng",
-  "folders": [],
   "requests": [
     {
       "v": "11",
-      "endpoint": "http://127.0.0.1:8000/signup",
       "name": "User Signup",
+      "method": "POST",
+      "endpoint": "http://127.0.0.1:8000/auth/signup",
       "params": [],
       "headers": [],
-      "method": "POST",
+      "preRequestScript": "",
+      "testScript": "",
       "auth": {
         "authType": "inherit",
         "authActive": true
       },
-      "preRequestScript": "",
-      "testScript": "",
       "body": {
         "contentType": "application/json",
         "body": "{\n  \"username\": \"Testuser20\",\n  \"password\": \"password\"\n}"
@@ -25,17 +24,71 @@
     },
     {
       "v": "11",
-      "endpoint": "http://127.0.0.1:8000/login",
       "name": "User Login",
+      "method": "POST",
+      "endpoint": "http://127.0.0.1:8000/auth/login",
       "params": [],
       "headers": [],
-      "method": "POST",
+      "preRequestScript": "",
+      "testScript": "",
       "auth": {
         "authType": "inherit",
         "authActive": true
       },
+      "body": {
+        "contentType": "application/json",
+        "body": "{\n  \"username\": \"Testuser20\",\n  \"password\": \"password\"\n}"
+      },
+      "requestVariables": [],
+      "responses": {}
+    },
+    {
+      "v": "11",
+      "name": "Authentication Test",
+      "method": "GET",
+      "endpoint": "http://127.0.0.1:8000/auth/check",
+      "params": [],
+      "headers": [
+        {
+          "key": "Cookie",
+          "value": "session_id=01964e3b-ce8c-7001-802f-335477be003b; SameSite=Strict; Path=/",
+          "active": true,
+          "description": ""
+        }
+      ],
       "preRequestScript": "",
       "testScript": "",
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
+      "body": {
+        "contentType": "application/json",
+        "body": "{\n  \"username\": \"Testuser20\",\n  \"password\": \"password\"\n}"
+      },
+      "requestVariables": [],
+      "responses": {}
+    },
+    {
+      "v": "11",
+      "name": "Logout",
+      "method": "GET",
+      "endpoint": "http://127.0.0.1:8000/auth/logout",
+      "params": [],
+      "headers": [
+        {
+          "key": "Cookie",
+          "value": "session_id=01964e3b-ce8c-7001-802f-335477be003b; SameSite=Strict; Path=/",
+          "active": true,
+          "description": ""
+        }
+      ],
+      "preRequestScript": "",
+      "testScript": "",
+      "auth": {
+        "authType": "inherit",
+        "authActive": true
+      },
       "body": {
         "contentType": "application/json",
         "body": "{\n  \"username\": \"Testuser20\",\n  \"password\": \"password\"\n}"
@@ -44,10 +97,11 @@
       "responses": {}
     }
   ],
-  "headers": [],
   "auth": {
     "authType": "none",
     "authActive": true
   },
-  "_ref_id": "coll_m9fzwn6z_2de61eb8-c7bf-4c99-b244-b588a337365b"
+  "headers": [],
+  "_ref_id": "coll_m9fzwn6z_2de61eb8-c7bf-4c99-b244-b588a337365b",
+  "folders": []
 }
