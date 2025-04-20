@@ -280,11 +280,12 @@ pub(crate) async fn route_logout(
     let _response = db
         .query(
             r#"
-        DELETE $session
+        DELETE $session_id
         "#,
         )
-        .bind(("session", user.session_id.clone()))
+        .bind(("session_id", user.session_id.clone()))
         .await;
+    dbg!(_response);
     // TODO: maybe handle response?
     // If this fails, there is no point telling the client though...
     "logged out"
