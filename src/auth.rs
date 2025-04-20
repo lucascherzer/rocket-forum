@@ -271,9 +271,22 @@ pub(crate) async fn route_login(
 // TODO: Implement route_logout
 //
 #[rocket::get("/logout")]
-pub(crate) async fn route_logout(_user: UserSession, cookies: &CookieJar<'_>) -> &'static str {
+pub(crate) async fn route_logout(
+    user: UserSession,
+    cookies: &CookieJar<'_>,
+    db: &State<Surreal<Any>>,
+) -> &'static str {
     cookies.remove("session_id");
-    // TODO: delete session from database
+    let _response = db
+        .query(
+            r#"
+        DELETE $session
+        "#,
+        )
+        .bind(("session", user.session_id.clone()))
+        .await;
+    // TODO: maybe handle response?
+    // If this fails, there is no point telling the client though...
     "logged out"
 }
 
