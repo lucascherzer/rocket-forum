@@ -34,6 +34,8 @@ build-server:
     - key: "cached-build-$CI_COMMIT_TAG"
       paths:
         - target/
+  needs:
+    - check-server
 
 build-server-container:
   stage: build
