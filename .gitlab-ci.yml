@@ -1,0 +1,26 @@
+stages:
+  - build
+  - release
+  - scan
+
+services:
+  - docker:24.0.5-dind
+
+# # This will be introduced later
+# # It generates a vulnerability report based on a container image
+# include:
+#   - template: Security/Container-Scanning.gitlab-ci.yml
+
+# generate-vulnreport:
+#   stage: scan
+#   variables:
+#     CS_ANALYZER_IMAGE: registry.gitlab.com/security-products/container-scanning/grype:4
+
+check-server:
+  stage: build
+  image: rust:1.85.0-slim-bullseye
+  script:
+    - cargo check
+  rules:
+    # if  pushing to main or a branch with open mr onto main
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
