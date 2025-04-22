@@ -24,3 +24,28 @@ check-server:
   rules:
     # if  pushing to main or a branch with open mr onto main
     - if: $CI_COMMIT_BRANCH == "main" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+
+build-server:
+  stage: build
+  image: rust:1.85.0-slim-bullseye
+  script:
+    - cargo build
+  cache:
+    - key: "cached-build-$CI_COMMIT_TAG"
+      paths:
+        - target/
+      expire_in: "1h"
+
+build-server-container:
+  stage: build
+  image: docker:24.0.5-dind
+  script:
+    - docker build -t rocket-forum:$CI_COMMIT_SHORT_SHA .
+  rules:
+    # if  pushing to main or a branch with open mr onto main
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"
+  cache:
+    - key: "cached-build-$CI_COMMIT_TAG"
+      paths:
+        - target/
+      expire_in: "1h"
