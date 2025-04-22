@@ -34,7 +34,6 @@ build-server:
     - key: "cached-build-$CI_COMMIT_TAG"
       paths:
         - target/
-      expire_in: "1h"
 
 build-server-container:
   stage: build
@@ -48,4 +47,3 @@ build-server-container:
     - key: "cached-build-$CI_COMMIT_TAG"
       paths:
         - target/
-      expire_in: "1h"
