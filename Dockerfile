@@ -1,12 +1,11 @@
 
 FROM rust:1.85.0-slim-bullseye AS build
-ARG APP_NAME
 WORKDIR /build
 
 RUN set -e
 COPY . /build
 RUN cargo build --release
-RUN cp ./target/release/$APP_NAME /bin/server
+RUN cp ./target/release/webeng /bin/server
 
 FROM cgr.dev/chainguard/wolfi-base
 
