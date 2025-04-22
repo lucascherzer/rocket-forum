@@ -2,6 +2,7 @@ pub mod auth;
 pub mod config;
 pub mod db;
 pub mod error;
+pub mod post;
 
 extern crate rocket;
 
@@ -9,6 +10,7 @@ use auth::{route_check, route_login, route_logout, route_signup};
 
 use config::get_config;
 use db::get_db;
+use post::create_post;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
@@ -41,6 +43,7 @@ async fn rocket() -> _ {
     rocket::build()
         .manage(db)
         .mount("/", rocket::routes![index])
+        .mount("/post", rocket::routes![create_post])
         .mount(
             "/auth",
             rocket::routes![route_signup, route_login, route_logout, route_check],
