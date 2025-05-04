@@ -1,19 +1,46 @@
-use rocket::{State, serde::json::Json};
+use std::collections::HashSet;
+
+use lazy_regex::regex;
+use rocket::{Responder, State, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use surrealdb::{RecordId, Surreal, engine::any::Any};
 
 use crate::{auth::UserSession, dbg_print};
 
+#[non_exhaustive]
+#[derive(Responder, Debug)]
+pub enum PostError {
+    #[response(status = 403)]
+    /// Occurs when liking a post or comment that has already been liked by
+    /// the user.
+    LikedAlready(&'static str),
+    #[response(status = 500)]
+    /// Occurs when the DB gives an unrecoverable error
+    DatabaseError(&'static str),
+}
+
 /// This contains the logic for creating posts and commenting on them
+// TODO
+// - Like/Dislike
+// - Get posts by some criteria (newest, hashtags, user)
 
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
-pub(crate) struct CreatePost {
+pub struct CreatePost {
     heading: String,
     // TODO: figure out how to add files to this
     text: String,
 }
 
+/// This object is received by [create_comment]
+#[derive(Debug, Deserialize, Clone)]
+#[serde(crate = "rocket::serde")]
+pub struct CreateComment {
+    post: String,
+    text: String,
+}
+
+/// The result returned from the database used in [create_post]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
 #[allow(dead_code)]
@@ -23,52 +50,154 @@ pub struct NewPostResult {
     r#out: RecordId,
 }
 
+/// The object returned by [create_post]. Is wrapped in `Json<>`
 #[derive(Debug, Deserialize, Clone, Serialize)]
 #[serde(crate = "rocket::serde")]
-pub(crate) struct PostId {
+pub struct PostId {
     id: String,
 }
 
+/// The object returned by [create_comment]. Is wrapped in `Json<>`
+#[derive(Debug, Deserialize, Clone, Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct CommentId {
+    id: String,
+}
+/// The object received by [like_post_or_comment]. Is wrapped in `Json<>`
+/// Contains the record id of the comment or post it wants to register a like for.
+#[derive(Debug, Deserialize, Clone, Serialize)]
+#[serde(crate = "rocket::serde")]
+pub struct LikePostOrComment {
+    subject: String,
+}
+
 #[rocket::post("/new", data = "<data>")]
-pub(crate) async fn create_post(
+pub async fn create_post(
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreatePost>,
 ) -> Option<Json<PostId>> {
     let data = data.into_inner();
-    let new_post_query = db
-        .query(
-            r#"
-            LET $post = (SELECT id FROM (CREATE Posts CONTENT {{
-                created_at: time::now(),
-                heading: $heading,
-                text: $text,
-                images: []
-            }}));
-            RELATE $user->created->$post;
-            "#,
-        )
+    let full_text = format!("{}{}", data.heading, data.text);
+    let hashtags: Vec<String> = extract_hashtags(full_text).into_iter().collect();
+
+    let mut res = db
+        .query(include_str!("queries/create_post.surql"))
         .bind(("heading", data.heading))
         .bind(("text", data.text))
         .bind(("user", user.user_id))
-        .await;
-    let mut new_post;
-    match new_post_query {
-        Ok(post) => new_post = post,
-        Err(_) => return None,
-    }
-    dbg_print!(&new_post);
-    let new_post = new_post
-        .take::<Vec<NewPostResult>>(1)
-        .map_err(|_| return None::<Json<RecordId>>)
-        .ok()
-        .unwrap()
-        // This unwrap should be safe because if it were Err, we would have
-        // returned earlier
-        .get(0)?
-        .to_owned();
-    dbg_print!(&new_post);
-    return Some(Json(PostId {
+        .bind(("hashtags", hashtags))
+        .await
+        .ok()?; // Early return on error
+
+    let new_post = res.take::<Vec<NewPostResult>>(1).ok()?.into_iter().next()?; // Safe access to first result
+
+    Some(Json(PostId {
         id: new_post.out.to_string(),
-    }));
+    }))
+}
+
+pub fn extract_hashtags(text: String) -> HashSet<String> {
+    let mut hashtags: HashSet<String> = HashSet::new();
+    regex!(r"(^|\s)#\w+")
+        .find_iter(text.as_str())
+        .for_each(|m| {
+            let mut s = String::from(m.as_str()).to_lowercase();
+            match (s.starts_with(" "), s.starts_with("\t")) {
+                (true, false) => s = s.strip_prefix(" ").unwrap().to_string(),
+                (false, true) => s = s.strip_prefix("\t").unwrap().to_string(),
+                (false, false) => {}
+                (true, true) => unreachable!(),
+            }
+            hashtags.insert(s);
+        });
+    hashtags
+}
+
+#[rocket::post("/comment", data = "<data>")]
+pub async fn create_comment(
+    user: UserSession,
+    db: &State<Surreal<Any>>,
+    data: Json<CreateComment>,
+) -> Option<Json<CommentId>> {
+    let data = data.into_inner();
+    let hashtags: Vec<String> = extract_hashtags(data.text.clone()).into_iter().collect();
+
+    let mut res = db
+        .query(include_str!("queries/create_comment.surql"))
+        .bind(("user", user.user_id))
+        .bind(("post_id", data.post))
+        .bind(("text", data.text))
+        .bind(("hashtags", hashtags))
+        .await
+        .ok()?; // Return None on error
+
+    let new_comment = res.take::<Vec<RecordId>>(2).ok()?.into_iter().next()?; // Safe access
+
+    Some(Json(CommentId {
+        id: new_comment.to_string(),
+    }))
+}
+
+#[rocket::post("/like", data = "<data>")]
+pub async fn like(
+    user: UserSession,
+    db: &State<Surreal<Any>>,
+    data: Json<LikePostOrComment>,
+) -> Result<(), PostError> {
+    let data = data.into_inner();
+    let like_query = db
+        .query(include_str!("queries/like.surql"))
+        .bind(("user", user.user_id))
+        .bind(("subject", data.subject))
+        .await;
+    let mut res = match like_query {
+        Ok(res) => res,
+        Err(_) => return Err(PostError::DatabaseError("Failed to register like")),
+    };
+
+    let already_liked = res.take::<Option<bool>>(5);
+    let created_entry = res.take::<Option<bool>>(6);
+    dbg!(&already_liked, &created_entry);
+
+    match already_liked {
+        Ok(Some(true)) => Err(PostError::LikedAlready(
+            "You can not like the same resource twice",
+        )),
+        Ok(Some(false)) => Ok(()),
+        _ => Err(PostError::DatabaseError("I have no clue what went wrong")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hashtag_parsing() {
+        let tests: Vec<(&str, Vec<&str>)> = vec![
+            ("", vec![]),
+            ("This is a test post.", vec![]),
+            ("This is a test post.#test", vec![]),
+            ("This is a test post. #test", vec!["#test"]),
+            ("This is a test post.#test#abc", vec![]),
+            ("This is a test post. #test #abc", vec!["#test", "#abc"]),
+            ("This is a test post. ##test", vec![]),
+            ("This is a test post. #. This is a new sentence", vec![]),
+            ("This is a test post. #", vec![]),
+            ("#posts starting with a # are valid", vec!["#posts"]),
+            (
+                "#double #double hashtags are counted as one",
+                vec!["#double"],
+            ),
+        ];
+        for (test, res) in tests {
+            dbg!(test, &res);
+            let mut test_solutions = HashSet::new();
+            for t in res {
+                test_solutions.insert(t.to_string());
+            }
+            assert_eq!(extract_hashtags(test.into()), test_solutions)
+        }
+    }
 }

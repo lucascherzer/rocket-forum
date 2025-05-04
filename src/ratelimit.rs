@@ -1,7 +1,7 @@
 // use rocket_governor::{Method, Quota, RocketGovernable};
 
 // #[rocket::get("/ratelimited")]
-// pub(crate) fn ratelimited(_limit: RateLimitGuard1ps) -> 'static str {
+// pub fn ratelimited(_limit: RateLimitGuard1ps) -> 'static str {
 //     "This route is rate limited"
 // }
 
