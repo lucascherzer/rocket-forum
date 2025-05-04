@@ -3,6 +3,7 @@ pub mod config;
 pub mod db;
 pub mod error;
 pub mod post;
+pub mod util;
 
 extern crate rocket;
 
@@ -16,7 +17,7 @@ use surrealdb::engine::any::Any;
 
 async fn init() -> Result<Surreal<Any>, surrealdb::Error> {
     let db_conf = get_config().expect("Failed to load configuration");
-    dbg!(&db_conf);
+    dbg_print!(&db_conf);
     let db = get_db(
         &db_conf.db_url.clone(),
         &db_conf.db_ns.clone(),
@@ -39,7 +40,6 @@ async fn index() -> &'static str {
 async fn rocket() -> _ {
     let db = init().await.expect("Failed to connect to database");
 
-    // TODO: read key from .env for release builds
     rocket::build()
         .manage(db)
         .mount("/", rocket::routes![index])
