@@ -16,7 +16,7 @@ pub fn get_config() -> Option<Config> {
     let db_db = std::env::var("SURREALDB_DB").unwrap();
     let db_user = std::env::var("SURREALDB_USER").unwrap();
     let db_pass = std::env::var("SURREALDB_PASS").unwrap();
-    let secret_key = std::env::var("SECRET_KEY").unwrap();
+    let secret_key = std::env::var("ROCKET_SECRET_KEY").unwrap();
 
     assert!(db_url != "" && db_ns != "" && db_db != "" && secret_key.len() >= 32);
 

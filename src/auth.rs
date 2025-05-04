@@ -10,6 +10,8 @@ use rocket::{
 };
 use surrealdb::{RecordId, Surreal, Uuid, engine::any::Any};
 
+use crate::dbg_print;
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
 pub(crate) struct UserPassword {
@@ -48,40 +50,40 @@ impl<'r> FromRequest<'r> for UserSession {
     type Error = AuthError;
 
     async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
-        dbg!("UserSession::from_request called");
+        dbg_print!("UserSession::from_request called");
         let session_id = match request.cookies().get("session_id") {
             Some(cookie) => {
-                dbg!("Found session_id cookie", cookie.value());
+                dbg_print!("Found session_id cookie", cookie.value());
                 match RecordId::from_str(format!("Sessions:u'{}'", cookie.value()).as_str()) {
                     Ok(id) => {
-                        dbg!("Parsed session_id RecordId", &id);
+                        dbg_print!("Parsed session_id RecordId", &id);
                         id
                     }
                     Err(e) => {
-                        dbg!("Failed to parse session_id RecordId", e);
+                        dbg_print!("Failed to parse session_id RecordId", e);
                         return request::Outcome::Forward(http::Status::BadRequest);
                     }
                 }
             }
             None => {
-                dbg!("No session_id cookie found");
+                dbg_print!("No session_id cookie found");
                 return request::Outcome::Forward(http::Status::Unauthorized);
             }
         };
 
-        dbg!("Getting DB state");
+        dbg_print!("Getting DB state");
         let db = match request.guard::<&State<Surreal<Any>>>().await {
             request::Outcome::Success(db) => {
-                dbg!("Got DB state");
+                dbg_print!("Got DB state");
                 db
             }
             _ => {
-                dbg!("Failed to get DB state");
+                dbg_print!("Failed to get DB state");
                 return request::Outcome::Forward(http::Status::InternalServerError);
             }
         };
 
-        dbg!("Querying user_id from session", &session_id);
+        dbg_print!("Querying user_id from session", &session_id);
         let user_id_from_session = db
             .query(
                 r#"
@@ -98,23 +100,23 @@ impl<'r> FromRequest<'r> for UserSession {
             )
             .bind(("session_id", session_id.clone()))
             .await;
-        dbg!("Query result", &user_id_from_session);
+        dbg_print!("Query result", &user_id_from_session);
 
         if user_id_from_session.is_err() {
-            dbg!(user_id_from_session);
+            dbg_print!(user_id_from_session);
             return request::Outcome::Forward(http::Status::Unauthorized);
         }
         let mut response: surrealdb::Response = user_id_from_session.ok().unwrap(); // TODO: handle
-        dbg!("Got db response", &response);
+        dbg_print!("Got db response", &response);
         if let Some(Some(user_id)) = response.take::<Option<RecordId>>(4).ok() {
             let sess = UserSession {
                 user_id,
                 session_id,
             };
-            dbg!("Found valid session with user", &sess);
+            dbg_print!("Found valid session with user", &sess);
             return request::Outcome::Success(sess);
         }
-        dbg!("No valid session found");
+        dbg_print!("No valid session found");
         return Outcome::Forward(http::Status::InternalServerError);
     }
 }
@@ -194,7 +196,7 @@ pub(crate) async fn route_signup(
 }
 
 async fn register_session(db: &Surreal<Any>, user_id: RecordId) -> Result<Uuid, AuthError> {
-    dbg!(&user_id);
+    dbg_print!(&user_id);
     let sess: Uuid = db
         .run("fn::new_session")
         .args(user_id)
@@ -221,9 +223,9 @@ async fn login(db: &Surreal<Any>, user: UserPassword) -> Result<Uuid, AuthError>
         .await;
     match query {
         Ok(mut result) => {
-            dbg!(&result);
+            dbg_print!(&result);
             if let Ok(user_id) = result.take::<Vec<UserWrapper>>(0) {
-                dbg!(&user_id);
+                dbg_print!(&user_id);
                 // At this point, we have a valid login. We now register a new
                 // session.
                 let user_id = user_id
@@ -283,7 +285,7 @@ pub(crate) async fn route_logout(
         )
         .bind(("session_id", user.session_id.clone()))
         .await;
-    dbg!(_response);
+    dbg_print!(_response);
     // TODO: maybe handle response?
     // If this fails, there is no point telling the client though...
     "logged out"

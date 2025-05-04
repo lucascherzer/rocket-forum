@@ -2,7 +2,7 @@ use rocket::{State, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use surrealdb::{RecordId, Surreal, engine::any::Any};
 
-use crate::auth::UserSession;
+use crate::{auth::UserSession, dbg_print};
 
 /// This contains the logic for creating posts and commenting on them
 
@@ -16,6 +16,7 @@ pub(crate) struct CreatePost {
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
+#[allow(dead_code)]
 pub struct NewPostResult {
     r#id: RecordId,
     r#in: RecordId,
@@ -56,7 +57,7 @@ pub(crate) async fn create_post(
         Ok(post) => new_post = post,
         Err(_) => return None,
     }
-    dbg!(&new_post);
+    dbg_print!(&new_post);
     let new_post = new_post
         .take::<Vec<NewPostResult>>(1)
         .map_err(|_| return None::<Json<RecordId>>)
@@ -66,7 +67,7 @@ pub(crate) async fn create_post(
         // returned earlier
         .get(0)?
         .to_owned();
-    dbg!(&new_post);
+    dbg_print!(&new_post);
     return Some(Json(PostId {
         id: new_post.out.to_string(),
     }));
