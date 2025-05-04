@@ -14,14 +14,14 @@ use crate::dbg_print;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
-pub(crate) struct UserPassword {
+pub struct UserPassword {
     username: String,
     password: String,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
-pub(crate) struct User {
+pub struct User {
     username: String,
     password: String,
     created_at: String,
@@ -41,9 +41,9 @@ struct CountWrapper {
 // This is not actually never used, its called via its FromRequest impl
 #[derive(Serialize, Debug)]
 #[allow(dead_code)]
-pub(crate) struct UserSession {
-    pub(crate) user_id: RecordId,
-    pub(crate) session_id: RecordId,
+pub struct UserSession {
+    pub user_id: RecordId,
+    pub session_id: RecordId,
 }
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for UserSession {
@@ -85,19 +85,7 @@ impl<'r> FromRequest<'r> for UserSession {
 
         dbg_print!("Querying user_id from session", &session_id);
         let user_id_from_session = db
-            .query(
-                r#"
-                LET $session_data = (SELECT user_id FROM Sessions WHERE id = $session_id);
-                IF array::is_empty($session_data) THEN
-                    (RETURN [])
-                END;
-                LET $user_data = (SELECT * FROM $session_data[0].user_id);
-                IF array::is_empty($user_data) OR $user_data[0].id = NONE THEN
-                    (RETURN [])
-                END;
-                RETURN $user_data[0].id;
-                "#,
-            )
+            .query(include_str!("queries/get_userid_from_sessionid.surql"))
             .bind(("session_id", session_id.clone()))
             .await;
         dbg_print!("Query result", &user_id_from_session);
@@ -134,7 +122,7 @@ struct UserWrapper {
 
 #[non_exhaustive]
 #[derive(Responder, Debug)]
-pub(crate) enum AuthError {
+pub enum AuthError {
     #[response(status = 500)]
     /// An error occurred while interacting with the database
     DatabaseError(&'static str),
@@ -151,7 +139,7 @@ pub(crate) enum AuthError {
 }
 
 #[rocket::post("/signup", data = "<user>")]
-pub(crate) async fn route_signup(
+pub async fn route_signup(
     db: &State<Surreal<Any>>,
     user: Json<UserPassword>,
 ) -> Result<(), AuthError> {
@@ -169,15 +157,7 @@ pub(crate) async fn route_signup(
             return Err(AuthError::UsernameTaken("Username already taken"));
         }
         if let Ok(_) = db
-            .query(
-                r#"
-                CREATE Users:uuid() CONTENT {{
-                    username: $username,
-                    password: crypto::argon2::generate($password),
-                    created: time::now(),
-                }}
-                "#,
-            )
+            .query(include_str!("queries/create_user.surql"))
             .bind(("username", user.username.clone()))
             .bind(("password", user.password.clone()))
             .await
@@ -211,13 +191,7 @@ async fn register_session(db: &Surreal<Any>, user_id: RecordId) -> Result<Uuid, 
 /// If successful, it registers a new session and returns the session UUID.
 async fn login(db: &Surreal<Any>, user: UserPassword) -> Result<Uuid, AuthError> {
     let query = db
-        .query(
-            r#"
-            SELECT id FROM Users WHERE
-                username = $username AND
-                crypto::argon2::compare(password, $password)
-            "#,
-        )
+        .query(include_str!("queries/login.surql"))
         .bind(("username", user.username.clone()))
         .bind(("password", user.password.clone()))
         .await;
@@ -248,7 +222,7 @@ async fn login(db: &Surreal<Any>, user: UserPassword) -> Result<Uuid, AuthError>
 }
 
 #[rocket::post("/login", data = "<user>")]
-pub(crate) async fn route_login(
+pub async fn route_login(
     db: &State<Surreal<Any>>,
     user: Json<UserPassword>,
     cookies: &CookieJar<'_>,
@@ -271,7 +245,7 @@ pub(crate) async fn route_login(
 }
 
 #[rocket::get("/logout")]
-pub(crate) async fn route_logout(
+pub async fn route_logout(
     user: UserSession,
     cookies: &CookieJar<'_>,
     db: &State<Surreal<Any>>,
@@ -292,6 +266,6 @@ pub(crate) async fn route_logout(
 }
 
 #[rocket::get("/check")]
-pub(crate) async fn route_check(_user: UserSession) -> &'static str {
+pub async fn route_check(_user: UserSession) -> &'static str {
     "You are authenticated"
 }
