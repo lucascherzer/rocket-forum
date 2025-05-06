@@ -297,13 +297,16 @@ pub async fn route_logout(
     db: &State<Surreal<Any>>,
 ) -> &'static str {
     cookies.remove("session_id");
+    // we need to ensure that a malicious user does not delete every session by
+    // setting his own session to `Sessions`, which would drop the entire table.
+    assert_ne!(user.session_id.clone().to_string(), "Sessions".to_string());
     let _response = db
         .query(
             r#"
         DELETE $session_id
         "#,
         )
-        .bind(("session_id", user.session_id.clone()))
+        .bind(("session_id", user.session_id))
         .await;
     dbg_print!(_response);
     // TODO: maybe handle response?
