@@ -34,7 +34,7 @@
 			<div class="button-group">
 				<a href="/forum" class="button primary">Zum Forum</a>
 				<a href="/profile" class="button secondary">Mein Profil</a>
-				<button class="button logout" on:click={() => goto('/auth/api/logout')}>Abmelden</button>
+				<button class="button logout" on:click={() => goto('/api/auth/logout')}>Abmelden</button>
 			</div>
 		</div>
 	{/if}

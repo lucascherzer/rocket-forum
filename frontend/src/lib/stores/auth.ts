@@ -8,7 +8,7 @@ export const isAuthenticated = writable(false);
 // Initialisiere Auth-Status beim Laden
 export async function checkAuthStatus(): Promise<boolean> {
 	try {
-		await apiRequest('/auth/api/check');
+		await apiRequest('/api/auth/check');
 		isAuthenticated.set(true);
 		return true;
 	} catch (error) {
@@ -21,7 +21,7 @@ export async function checkAuthStatus(): Promise<boolean> {
 
 export async function login(username: string, password: string) {
 	try {
-		await apiRequest('/auth/api/login', {
+		await apiRequest('/api/auth/login', {
 			method: 'POST',
 			body: JSON.stringify({ username, password })
 		});
@@ -48,7 +48,7 @@ export async function login(username: string, password: string) {
 
 export async function signup(username: string, password: string) {
 	try {
-		await apiRequest('/auth/api/signup', {
+		await apiRequest('/api/auth/signup', {
 			method: 'POST',
 			body: JSON.stringify({ username, password })
 		});
@@ -61,7 +61,7 @@ export async function signup(username: string, password: string) {
 
 export async function logout() {
 	try {
-		await apiRequest('/auth/api/logout');
+		await apiRequest('/api/auth/logout');
 		isAuthenticated.set(false);
 		currentUser.set(null);
 		return true;
