@@ -6,7 +6,7 @@
       "v": "11",
       "name": "User Signup",
       "method": "POST",
-      "endpoint": "http://127.0.0.1:8000/auth/signup",
+      "endpoint": "http://127.0.0.1:8000/auth/api/signup",
       "params": [],
       "headers": [],
       "preRequestScript": "",
@@ -26,7 +26,7 @@
       "v": "11",
       "name": "User Login",
       "method": "POST",
-      "endpoint": "http://127.0.0.1:8000/auth/login",
+      "endpoint": "http://127.0.0.1:8000/auth/api/login",
       "params": [],
       "headers": [],
       "preRequestScript": "",
@@ -46,7 +46,7 @@
       "v": "11",
       "name": "Authentication Test",
       "method": "GET",
-      "endpoint": "http://127.0.0.1:8000/auth/check",
+      "endpoint": "http://127.0.0.1:8000/auth/api/check",
       "params": [],
       "headers": [
         {
@@ -73,7 +73,7 @@
       "v": "11",
       "name": "Logout",
       "method": "GET",
-      "endpoint": "http://127.0.0.1:8000/auth/logout",
+      "endpoint": "http://127.0.0.1:8000/auth/api/logout",
       "params": [],
       "headers": [
         {
