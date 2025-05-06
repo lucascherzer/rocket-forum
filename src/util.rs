@@ -4,8 +4,7 @@ macro_rules! dbg_print {
     ($($val:expr),+ $(,)?) => {
         #[cfg(debug_assertions)]
         {
-            #[allow(unused_variables)]
-            dbg!($($val),+);
+            let _ = dbg!($($val),+);
         }
     };
 }

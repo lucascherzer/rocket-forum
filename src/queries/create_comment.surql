@@ -5,6 +5,7 @@ LET $comment = (
         text: $text,
         likes: 0,
         dislikes: 0,
-        hashtags: $hashtags
+        hashtags: $hashtags,
+        deleted: false
 });
 RETURN $comment.id;
