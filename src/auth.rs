@@ -204,6 +204,19 @@ pub enum AuthError {
     Unauthorized(&'static str),
 }
 
+/// [route_signup] handles user creation.
+/// You can create new users by sending a json body with the following fields:
+/// ```json
+/// {
+///     "username": "...",
+///     "password": "...",
+///     "role": "Admin|User"
+/// }
+/// ```
+/// Note that the `role` field is optional, defaults to `User` and is best left
+/// unspecified, unless you want to explicitly set it to `Admin`.
+/// This requires the user to be logged in as an admin. When a regular user
+/// tries to create an admin account, it will return a 401.
 #[rocket::post("/signup", data = "<create_user>")]
 pub async fn route_signup(
     db: &State<Surreal<Any>>,
