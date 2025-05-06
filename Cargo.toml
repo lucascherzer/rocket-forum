@@ -2,6 +2,7 @@
 name = "webeng"
 version = "0.1.0"
 edition = "2024"
+build = "build.rs"
 
 [dependencies]
 rocket = { version = "0.5.1", features = ["json", "uuid", "secrets"] }
@@ -12,4 +13,5 @@ dotenv = "0.15.0"
 faker_rand = "0.1.1"
 rand = "0.8.5"
 thiserror = "1.0.64"
+rocket_cors = "0.6.0"
 lazy-regex = "3.4.1"

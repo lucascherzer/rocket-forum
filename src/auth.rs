@@ -312,6 +312,7 @@ pub async fn route_logout(
 }
 
 #[rocket::get("/check")]
+
 pub async fn route_check(_user: UserSession) -> &'static str {
     "You are authenticated"
 }

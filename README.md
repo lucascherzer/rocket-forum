@@ -2,7 +2,7 @@
 
 ## Tech Stack
 - backend: Rust + Rocket
-- frontend: n/a
+- frontend: Svelte
 - db: SurrealDB
 
 ## API Testing

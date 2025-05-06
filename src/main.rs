@@ -1,5 +1,7 @@
 pub mod auth;
+pub mod common_redirects;
 pub mod config;
+pub mod cors;
 pub mod db;
 pub mod error;
 pub mod moderation;
@@ -7,10 +9,11 @@ pub mod post;
 pub mod util;
 
 extern crate rocket;
-
 use auth::{route_check, route_login, route_logout, route_signup};
+use rocket::fs::{FileServer, relative};
 
 use config::get_config;
+use cors::get_cors_config;
 use db::get_db;
 use moderation::route_delete;
 use post::{route_create_comment, route_create_post, route_like};
@@ -41,10 +44,11 @@ async fn index() -> &'static str {
 #[rocket::launch]
 async fn rocket() -> _ {
     let db = init().await.expect("Failed to connect to database");
+    let cors_conf = get_cors_config().unwrap();
 
     rocket::build()
         .manage(db)
-        .mount("/", rocket::routes![index])
+        .attach(cors_conf)
         .mount(
             "/post",
             rocket::routes![
@@ -55,7 +59,16 @@ async fn rocket() -> _ {
             ],
         )
         .mount(
-            "/auth",
+            "/",
+            rocket::routes![
+                common_redirects::login,
+                common_redirects::signup,
+                common_redirects::index
+            ],
+        )
+        .mount("/", FileServer::from(relative!("static/")).rank(10))
+        .mount(
+            "/api/auth",
             rocket::routes![route_signup, route_login, route_logout, route_check],
         )
 }
