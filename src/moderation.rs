@@ -7,6 +7,8 @@ use crate::{
     dbg_print,
 };
 
+/// [DeleteSubject] is the object received by the [route_delete] function.
+/// It is used to identify the type of subject to be deleted.
 #[derive(Deserialize, Serialize)]
 pub struct DeleteSubject {
     #[serde(rename = "type")]

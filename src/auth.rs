@@ -20,10 +20,23 @@ pub struct CreateUser {
     role: Option<UserRole>,
 }
 
+/// [UserRole] abstracts the permissions a user has.
+/// Because it implements [PartialOrd] and [Ord], it can be used in
+/// comparisons and sorting:
+/// ```rs
+/// let admin = UserRole::Admin;
+/// let user = UserRole::User
+/// assert!(admin > user)
+/// assert!(admin == admin)
+/// assert!(admin >= user)
+/// ```
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub enum UserRole {
+    /// An administrator is a user with special permissions allowing for
+    /// the deletion of posts and comments
     #[serde(rename = "Admin")]
     Admin,
+    /// A user is a normal user without special permissions
     #[serde(rename = "User")]
     User,
 }
@@ -314,6 +327,17 @@ async fn login(db: &Surreal<Any>, user: CreateUser) -> Result<Uuid, AuthError> {
     }
 }
 
+/// [route_login] is the API endpoint used to log in a user.
+/// It receives a POST request with a body containing a JSON [CreateUser]
+/// # Example Body
+/// ```json
+/// {
+///     "username": "example_user",
+///     "password": "example_password"
+/// }
+/// Even though there is an optional `role` field, it does nothing and will be
+/// ignored
+/// ```
 #[rocket::post("/login", data = "<user>")]
 pub async fn route_login(
     db: &State<Surreal<Any>>,

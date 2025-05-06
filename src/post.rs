@@ -32,7 +32,7 @@ pub struct CreatePost {
     text: String,
 }
 
-/// This object is received by [create_comment]
+/// This object is received by [route_create_comment]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
 pub struct CreateComment {
@@ -40,7 +40,7 @@ pub struct CreateComment {
     text: String,
 }
 
-/// The result returned from the database used in [create_post]
+/// The result returned from the database used in [route_create_post]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
 #[allow(dead_code)]
@@ -50,20 +50,20 @@ pub struct NewPostResult {
     r#out: RecordId,
 }
 
-/// The object returned by [create_post]. Is wrapped in `Json<>`
+/// The object returned by [route_create_post]. Is wrapped in `Json<>`
 #[derive(Debug, Deserialize, Clone, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct PostId {
     id: String,
 }
 
-/// The object returned by [create_comment]. Is wrapped in `Json<>`
+/// The object returned by [route_create_comment]. Is wrapped in `Json<>`
 #[derive(Debug, Deserialize, Clone, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct CommentId {
     id: String,
 }
-/// The object received by [like_post_or_comment]. Is wrapped in `Json<>`
+/// The object received by [route_like]. Is wrapped in `Json<>`
 /// Contains the record id of the comment or post it wants to register a like for.
 #[derive(Debug, Deserialize, Clone, Serialize)]
 #[serde(crate = "rocket::serde")]
@@ -71,12 +71,21 @@ pub struct LikePostOrComment {
     subject: String,
 }
 
+/// [route_create_post] is the API route that is used to create posts (shocking,
+/// I know). It receives a JSON object in the body:
+/// ```json
+/// {
+///     "heading": "This is the posts heading",
+///     "text": "This is the posts text"
+/// }
+/// ```
 #[rocket::post("/new", data = "<data>")]
 pub async fn route_create_post(
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreatePost>,
 ) -> Option<Json<PostId>> {
+    // TODO: limit the length of heading and text
     let data = data.into_inner();
     let full_text = format!("{}{}", data.heading, data.text);
     let hashtags: Vec<String> = extract_hashtags(full_text).into_iter().collect();

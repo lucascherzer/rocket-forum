@@ -7,7 +7,6 @@ pub fn route_frontend_index() -> Redirect {
 }
 
 #[rocket::get("/login")]
-
 pub fn route_frontend_login(cookies: &CookieJar<'_>) -> Redirect {
     if cookies.get("session_id").is_some() {
         return Redirect::to("/");
