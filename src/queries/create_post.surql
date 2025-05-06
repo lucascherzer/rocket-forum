@@ -3,6 +3,7 @@ LET $post = (SELECT id FROM (CREATE Posts CONTENT {
     heading: $heading,
     text: $text,
     images: [],
-    hashtags: $hashtags
+    hashtags: $hashtags,
+    deleted: false
 }));
 RELATE $user->created->$post;

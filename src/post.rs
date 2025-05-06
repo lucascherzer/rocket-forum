@@ -72,7 +72,7 @@ pub struct LikePostOrComment {
 }
 
 #[rocket::post("/new", data = "<data>")]
-pub async fn create_post(
+pub async fn route_create_post(
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreatePost>,
@@ -115,24 +115,27 @@ pub fn extract_hashtags(text: String) -> HashSet<String> {
 }
 
 #[rocket::post("/comment", data = "<data>")]
-pub async fn create_comment(
+pub async fn route_create_comment(
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreateComment>,
 ) -> Option<Json<CommentId>> {
     let data = data.into_inner();
+    dbg_print!("Creating new comment");
     let hashtags: Vec<String> = extract_hashtags(data.text.clone()).into_iter().collect();
 
-    let mut res = db
+    let res = db
         .query(include_str!("queries/create_comment.surql"))
         .bind(("user", user.user_id))
         .bind(("post_id", data.post))
         .bind(("text", data.text))
         .bind(("hashtags", hashtags))
-        .await
-        .ok()?; // Return None on error
+        .await;
+    dbg_print!(&res);
+    let mut res = res.ok()?;
 
     let new_comment = res.take::<Vec<RecordId>>(2).ok()?.into_iter().next()?; // Safe access
+    dbg_print!(&new_comment);
 
     Some(Json(CommentId {
         id: new_comment.to_string(),
@@ -140,7 +143,7 @@ pub async fn create_comment(
 }
 
 #[rocket::post("/like", data = "<data>")]
-pub async fn like(
+pub async fn route_like(
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<LikePostOrComment>,

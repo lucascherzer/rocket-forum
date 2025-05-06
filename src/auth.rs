@@ -19,6 +19,14 @@ pub struct UserPassword {
     password: String,
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+pub enum UserRole {
+    #[serde(rename = "Admin")]
+    Admin,
+    #[serde(rename = "User")]
+    User,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
 pub struct User {
@@ -26,6 +34,7 @@ pub struct User {
     password: String,
     created_at: String,
 }
+
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(crate = "rocket::serde")]
 /// We use this to represent the DB return type
@@ -38,12 +47,51 @@ struct CountWrapper {
     count: usize,
 }
 
-// This is not actually never used, its called via its FromRequest impl
-#[derive(Serialize, Debug)]
+/// A UserSession can be used as a request guard to ensure a route can only be
+/// called by authenticated users (Users and Admins alike).
+/// # Example
+/// ```rs
+/// #[rocket::get("/restricted")]
+/// fn restricted_route(user: UserSession) -> String {
+///     format!("Hello, {}", user.role)
+/// }
+/// ```
+/// # Distinguishing users and admins
+/// You can distinguish users from admins via the convenience functions
+/// [UserSession::is_admin] and [UserSession::is_user].
+/// ```rs
+/// #[rocket::get("/restricted")]
+/// fn restricted_route(user: UserSession) -> String {
+///     if user.is_admin() {
+///         "Hello, Admin!".to_string()
+///     } else {
+///         "Hello, User!".to_string()
+///     }
+/// }
+/// ```
+#[derive(Serialize, Deserialize, Debug)]
 #[allow(dead_code)]
 pub struct UserSession {
     pub user_id: RecordId,
     pub session_id: RecordId,
+    pub role: UserRole,
+}
+
+impl UserSession {
+    /// Returns true if the user is an admin.
+    /// This simply compares the role field with UserRole::Admin, but is
+    /// always inlined, so no performance losses from calling this method.
+    #[inline(always)]
+    pub fn is_admin(&self) -> bool {
+        self.role == UserRole::Admin
+    }
+    /// Returns true if the user is a regular user.
+    /// This simply compares the role field with UserRole::User, but is
+    /// always inlined, so no performance losses from calling this method.
+    #[inline(always)]
+    pub fn is_user(&self) -> bool {
+        self.role == UserRole::User
+    }
 }
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for UserSession {
@@ -96,16 +144,13 @@ impl<'r> FromRequest<'r> for UserSession {
         }
         let mut response: surrealdb::Response = user_id_from_session.ok().unwrap(); // TODO: handle
         dbg_print!("Got db response", &response);
-        if let Some(Some(user_id)) = response.take::<Option<RecordId>>(4).ok() {
-            let sess = UserSession {
-                user_id,
-                session_id,
-            };
+        if let Some(Some(sess)) = response.take::<Option<UserSession>>(4).ok() {
             dbg_print!("Found valid session with user", &sess);
             return request::Outcome::Success(sess);
+        } else {
+            dbg_print!("No valid session found");
+            return Outcome::Forward(http::Status::InternalServerError);
         }
-        dbg_print!("No valid session found");
-        return Outcome::Forward(http::Status::InternalServerError);
     }
 }
 
@@ -116,8 +161,8 @@ impl<'r> FromRequest<'r> for UserSession {
 /// {"id": "uuid"}
 /// ```
 /// This is what the DB returns for our query that validates the login
-struct UserWrapper {
-    id: RecordId,
+pub struct UserWrapper {
+    pub id: RecordId,
 }
 
 #[non_exhaustive]
@@ -160,6 +205,7 @@ pub async fn route_signup(
             .query(include_str!("queries/create_user.surql"))
             .bind(("username", user.username.clone()))
             .bind(("password", user.password.clone()))
+            .bind(("role", UserRole::User))
             .await
         {
             Ok(())
