@@ -19,7 +19,7 @@ pub struct DeleteSubject {
 /// ```json
 /// {
 ///     "type": "Posts|commented",
-///     "reason": "id"
+///     "id": "id"
 /// }
 /// Deletion here does not mean the post/comment is dropped from the database,
 /// it only means that the post/comment is no longer visible to the user.

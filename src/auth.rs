@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{fs::create_dir, str::FromStr};
 
 use rocket::{
     Responder, State,
@@ -14,17 +14,35 @@ use crate::dbg_print;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
-pub struct UserPassword {
+pub struct CreateUser {
     username: String,
     password: String,
+    role: Option<UserRole>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 pub enum UserRole {
     #[serde(rename = "Admin")]
     Admin,
     #[serde(rename = "User")]
     User,
+}
+
+impl PartialOrd for UserRole {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for UserRole {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self, other) {
+            (UserRole::Admin, UserRole::Admin) => std::cmp::Ordering::Equal,
+            (UserRole::Admin, UserRole::User) => std::cmp::Ordering::Greater,
+            (UserRole::User, UserRole::Admin) => std::cmp::Ordering::Less,
+            (UserRole::User, UserRole::User) => std::cmp::Ordering::Equal,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -181,19 +199,25 @@ pub enum AuthError {
     #[response(status = 500)]
     /// An error occurred while registering the session
     SessionRegistrationError(String),
+    #[response(status = 401)]
+    /// The user is not authorized to perform the requested action
+    Unauthorized(&'static str),
 }
 
-#[rocket::post("/signup", data = "<user>")]
+#[rocket::post("/signup", data = "<create_user>")]
 pub async fn route_signup(
     db: &State<Surreal<Any>>,
-    user: Json<UserPassword>,
+    create_user: Json<CreateUser>,
+    session: Option<UserSession>,
 ) -> Result<(), AuthError> {
     // TODO: redirect when already logged in
     // TODO: redirect after user creation
     let expected: Vec<CountWrapper> = vec![];
+    let create_user = create_user.into_inner();
+    let create_role: UserRole;
     if let Ok(db_result) = db
         .query("SELECT count(username) FROM Users WHERE username = $username")
-        .bind(("username", user.username.clone()))
+        .bind(("username", create_user.username.clone()))
         .await
         .expect("DB error")
         .take::<Vec<CountWrapper>>(0usize)
@@ -201,11 +225,21 @@ pub async fn route_signup(
         if db_result != expected {
             return Err(AuthError::UsernameTaken("Username already taken"));
         }
+        match (session, create_user.role) {
+            (Some(sess), Some(role)) => {
+                if sess.role >= role {
+                    create_role = role
+                } else {
+                    return Err(AuthError::Unauthorized("Insufficient permissions"));
+                }
+            }
+            _ => create_role = UserRole::User,
+        }
         if let Ok(_) = db
             .query(include_str!("queries/create_user.surql"))
-            .bind(("username", user.username.clone()))
-            .bind(("password", user.password.clone()))
-            .bind(("role", UserRole::User))
+            .bind(("username", create_user.username.clone()))
+            .bind(("password", create_user.password.clone()))
+            .bind(("role", create_role))
             .await
         {
             Ok(())
@@ -235,7 +269,7 @@ async fn register_session(db: &Surreal<Any>, user_id: RecordId) -> Result<Uuid, 
 
 /// Attempts a login.
 /// If successful, it registers a new session and returns the session UUID.
-async fn login(db: &Surreal<Any>, user: UserPassword) -> Result<Uuid, AuthError> {
+async fn login(db: &Surreal<Any>, user: CreateUser) -> Result<Uuid, AuthError> {
     let query = db
         .query(include_str!("queries/login.surql"))
         .bind(("username", user.username.clone()))
@@ -270,7 +304,7 @@ async fn login(db: &Surreal<Any>, user: UserPassword) -> Result<Uuid, AuthError>
 #[rocket::post("/login", data = "<user>")]
 pub async fn route_login(
     db: &State<Surreal<Any>>,
-    user: Json<UserPassword>,
+    user: Json<CreateUser>,
     cookies: &CookieJar<'_>,
 ) -> Result<Redirect, AuthError> {
     // TODO: brute force protection
@@ -318,4 +352,48 @@ pub async fn route_logout(
 
 pub async fn route_check(_user: UserSession) -> &'static str {
     "You are authenticated"
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    #[derive(Debug)]
+    struct RoleTestCase((UserRole, &'static str, UserRole), bool);
+
+    #[test]
+    fn test_role_hierarchy() {
+        let test_interpreter = |test: RoleTestCase| {
+            println!("Running test case {:?}", &test);
+            match test.0.1 {
+                "<" => assert_eq!(test.0.0 < test.0.2, test.1),
+                "=" => assert_eq!(test.0.0 == test.0.2, test.1),
+                ">" => assert_eq!(test.0.0 > test.0.2, test.1),
+                "<=" => assert_eq!(test.0.0 <= test.0.2, test.1),
+                ">=" => assert_eq!(test.0.0 >= test.0.2, test.1),
+                _ => panic!("Invalid operator"),
+            }
+        };
+        let tests = [
+            RoleTestCase((UserRole::Admin, "<", UserRole::Admin), false),
+            RoleTestCase((UserRole::Admin, "<", UserRole::User), false),
+            RoleTestCase((UserRole::User, "<", UserRole::Admin), true),
+            RoleTestCase((UserRole::User, "<", UserRole::User), false),
+            RoleTestCase((UserRole::Admin, "=", UserRole::Admin), true),
+            RoleTestCase((UserRole::Admin, "=", UserRole::User), false),
+            RoleTestCase((UserRole::User, "=", UserRole::Admin), false),
+            RoleTestCase((UserRole::User, "=", UserRole::User), true),
+            RoleTestCase((UserRole::Admin, ">=", UserRole::Admin), true),
+            RoleTestCase((UserRole::Admin, ">=", UserRole::User), true),
+            RoleTestCase((UserRole::User, ">=", UserRole::Admin), false),
+            RoleTestCase((UserRole::User, ">=", UserRole::User), true),
+            RoleTestCase((UserRole::Admin, "<=", UserRole::Admin), true),
+            RoleTestCase((UserRole::Admin, "<=", UserRole::User), false),
+            RoleTestCase((UserRole::User, "<=", UserRole::Admin), true),
+            RoleTestCase((UserRole::User, "<=", UserRole::User), true),
+        ];
+        for test in tests {
+            test_interpreter(test);
+        }
+    }
 }
