@@ -36,11 +36,6 @@ async fn init() -> Result<Surreal<Any>, surrealdb::Error> {
     Ok(db)
 }
 
-#[rocket::get("/")]
-async fn index() -> &'static str {
-    "Hello World"
-}
-
 #[rocket::launch]
 async fn rocket() -> _ {
     let db = init().await.expect("Failed to connect to database");
@@ -50,7 +45,7 @@ async fn rocket() -> _ {
         .manage(db)
         .attach(cors_conf)
         .mount(
-            "/post",
+            "/api/post",
             rocket::routes![
                 route_create_post,
                 route_create_comment,
@@ -61,9 +56,9 @@ async fn rocket() -> _ {
         .mount(
             "/",
             rocket::routes![
-                common_redirects::login,
-                common_redirects::signup,
-                common_redirects::index
+                common_redirects::route_frontend_login,
+                common_redirects::route_frontend_signup,
+                common_redirects::route_frontend_index
             ],
         )
         .mount("/", FileServer::from(relative!("static/")).rank(10))
