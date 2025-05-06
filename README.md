@@ -26,3 +26,7 @@ balancer.
 > [!warning] File Upload
 > This is correct at the time of writing. But we do not have image uploads yet.
 > For images we may want to use the S3 free tier.
+
+> [!warning] DDoS Protection
+> We want to have rate-limiting while the server can remain stateless.
+> It is not yet implemented but being worked on.
