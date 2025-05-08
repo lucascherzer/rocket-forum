@@ -125,4 +125,9 @@
 	.logout:hover {
 		background-color: #fff0f0;
 	}
+
+	body, input, button, textarea,
+    .header-title, label, .error, .already-logged-in-box, a, p, h1, h2, h3, h4, h5, h6, div {
+        font-family: system-ui, sans-serif;
+    }
 </style>

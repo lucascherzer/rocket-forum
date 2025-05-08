@@ -1,125 +1,200 @@
+<!-- Home page for the Rocket-Forum application -->
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { isAuthenticated } from '$lib/stores/auth';
-	import { onMount } from 'svelte';
+    import { goto } from '$app/navigation';
+    import { isAuthenticated, checkAuthStatus, logout } from '$lib/stores/auth';
+    import { onMount } from 'svelte';
 
-	// Beim Laden der Seite den Auth-Status überprüfen
-	import { checkAuthStatus } from '$lib/stores/auth';
+    let isLoading = true;
+    let showOverlay = false;
 
-	let isLoading = true;
+    onMount(async () => {
+        isLoading = true;
+        await checkAuthStatus();
+        isLoading = false;
+    });
 
-	onMount(async () => {
-		console.log('Startseite geladen, überprüfe Auth-Status...');
-		isLoading = true;
-		// Bei jedem Laden der Seite den Auth-Status neu überprüfen
-		const authStatus = await checkAuthStatus();
-		console.log('Auth-Status auf Startseite:', authStatus, 'isAuthenticated:', $isAuthenticated);
-		isLoading = false;
-	});
+    function navigateToLogin() {
+        goto('/login');
+    }
 
-	function navigateToLogin() {
-		goto('/login');
-	}
+    function handleLogout() {
+        logout();
+        showOverlay = false;
+    }
 
-	function navigateToForum() {
-		goto('/forum');
-	}
+    function toggleOverlay() {
+        showOverlay = !showOverlay;
+    }
+
+    function closeOverlay() {
+        showOverlay = false;
+    }
 </script>
 
+<header class="sticky-header">
+    <div class="header-content">
+        <h1 class="header-title">Rocket-Forum</h1>
+        <div class="header-right">
+            {#if !$isAuthenticated}
+                <button class="login-button" on:click={navigateToLogin}>Login</button>
+            {:else}
+                <button class="login-success user-icon" aria-label="User menu" on:click={toggleOverlay}>&#128100;</button>
+                {#if showOverlay}
+                    <div class="user-overlay" role="dialog" aria-label="User menu" tabindex="0" on:click|stopPropagation on:keydown={(e) => e.key === 'Escape' && closeOverlay()}>
+                        <button class="logout-button" on:click={handleLogout}>Logout</button>
+                    </div>
+                    <button class="overlay-backdrop" aria-label="Close overlay" on:click={closeOverlay} on:keydown={(e) => e.key === 'Enter' && closeOverlay()}></button>
+                {/if}
+            {/if}
+        </div>
+    </div>
+</header>
+
 {#if isLoading}
-	<div class="loading-indicator">Lade...</div>
+    <div class="loading-indicator">Lade...</div>
 {:else}
-	{#if $isAuthenticated}
-		<div class="logged-in-banner">
-			<span class="logged-in-text">✓ Logged in</span>
-		</div>
-	{/if}
-
-	<div class="welcome-container">
-		<h1>Willkommen im Rocket-Forum</h1>
-
-		<div class="welcome-text">
-			<p>Deine neue Community-Plattform für Diskussionen und Austausch.</p>
-			<p>Melde dich an, um an Gesprächen teilzunehmen oder eigene Themen zu erstellen.</p>
-		</div>
-
-		<div class="button-container">
-			{#if !$isAuthenticated}
-				<button class="login-button" on:click={navigateToLogin}> Zum Login </button>
-			{:else}
-				<button class="forum-button" on:click={navigateToForum}> Zum Forum </button>
-			{/if}
-		</div>
-	</div>
+    <div class="welcome-container">
+        <div class="welcome-text">
+            <p>Deine neue Community-Plattform für Diskussionen und Austausch.</p>
+            <p>Melde dich an, um an Gesprächen teilzunehmen oder eigene Themen zu erstellen.</p>
+        </div>
+    </div>
 {/if}
 
 <style>
-	.logged-in-banner {
-		background-color: rgba(76, 175, 80, 0.1);
-		padding: 0.5rem;
-		text-align: center;
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		z-index: 100;
-	}
-
-	.logged-in-text {
-		color: #4caf50;
-		font-weight: bold;
-	}
-
-	.welcome-container {
-		max-width: 800px;
-		margin: 4rem auto;
-		text-align: center;
-		padding: 2rem;
+    .sticky-header {
+        position: sticky;
+        top: 0;
+        width: 100%;
+        background: #f36906;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        z-index: 200;
 		border-radius: 8px;
-		background-color: white;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-	}
+    }
 
-	h1 {
-		color: #333;
-		margin-bottom: 1.5rem;
-		font-size: 2.2rem;
-	}
+    .header-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0.7rem 1.5rem;
+        position: relative;
+    }
 
-	.welcome-text {
-		margin-bottom: 2.5rem;
-	}
+    .header-title {
+        margin: 0 auto;
+        font-size: 1.7rem;
+        font-weight: 700;
+        color: #333;
+        letter-spacing: 1px;
+    }
 
-	p {
-		color: #666;
-		line-height: 1.6;
-		font-size: 1.1rem;
-		margin-bottom: 1rem;
-	}
+    .header-right {
+        position: absolute;
+        right: 1.5rem;
+        display: flex;
+        align-items: center;
+    }
 
-	.button-container {
-		margin-top: 2rem;
-	}
+    .login-button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        padding: 0.5rem 1.2rem;
+        font-size: 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
 
-	.login-button,
-	.forum-button {
-		background-color: #4caf50;
-		color: white;
-		border: none;
-		padding: 0.8rem 2rem;
-		font-size: 1.1rem;
-		border-radius: 4px;
-		cursor: pointer;
-		transition: background-color 0.2s;
-	}
+    .login-button:hover {
+        background-color: #3e9142;
+    }
 
-	.login-button:hover,
-	.forum-button:hover {
-		background-color: #3e9142;
-	}
+    .login-success.user-icon {
+        color: #4caf50;
+        font-size: 1.5rem;
+        font-weight: bold;
+        cursor: pointer;
+        border-radius: 10%;
+        padding: 0.2rem 0.4rem;
+        transition: background 0.2s;
+        outline: none;
+    }
+    .login-success.user-icon:focus,
+    .login-success.user-icon:hover {
+        background: #e8f5e9;
+		outline: none;
+    }
 
-	/* Extra Abstand, wenn das Banner angezeigt wird */
-	:global(body) {
-		margin-top: 2.5rem;
-	}
+    .user-overlay {
+        position: absolute;
+        top: 2.2rem;
+        right: 0;
+        background: #fff;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+        padding: 1rem 1.2rem;
+        z-index: 300;
+        /*min-width: 120px;*/
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .logout-button {
+        background: #e53935;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1.2rem;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .logout-button:hover {
+        background: #b71c1c;
+    }
+
+    .overlay-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: transparent;
+        z-index: 250;
+    }
+
+    .welcome-container {
+        max-width: 800px;
+        margin: 4rem auto;
+        text-align: center;
+        padding: 2rem;
+        border-radius: 8px;
+        background-color: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .welcome-text {
+        margin-bottom: 2.5rem;
+    }
+
+    p {
+        color: #666;
+        line-height: 1.6;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    .loading-indicator {
+        text-align: center;
+        margin-top: 3rem;
+        font-size: 1.2rem;
+        color: #666;
+    }
+
+	body, input, button, textarea,
+    .header-title, label, .error, .already-logged-in-box, a, p, h1, h2, h3, h4, h5, h6, div {
+        font-family: system-ui, sans-serif;
+    }
 </style>
