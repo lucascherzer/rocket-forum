@@ -35,34 +35,40 @@
 	}
 </script>
 
-<h1>Registrieren</h1>
-
-<form on:submit|preventDefault={handleSubmit}>
-	{#if error}
-		<div class="error">{error}</div>
-	{/if}
-
-	<div>
-		<label for="username">Benutzername</label>
-		<input id="username" type="text" bind:value={username} required />
+<header class="sticky-header">
+	<div class="header-content">
+		<h1 class="header-title">Registrieren</h1>
 	</div>
+</header>
 
-	<div>
-		<label for="password">Passwort</label>
-		<input id="password" type="password" bind:value={password} required />
-	</div>
+<div class="login-container">
+	<form on:submit|preventDefault={handleSubmit}>
+		{#if error}
+			<div class="error">{error}</div>
+		{/if}
 
-	<div>
-		<label for="confirmPassword">Passwort bestätigen</label>
-		<input id="confirmPassword" type="password" bind:value={confirmPassword} required />
-	</div>
+		<div>
+			<label for="username">Benutzername</label>
+			<input id="username" type="text" bind:value={username} required />
+		</div>
 
-	<button type="submit" disabled={loading}>
-		{loading ? 'Bitte warten...' : 'Registrieren'}
-	</button>
+		<div>
+			<label for="password">Passwort</label>
+			<input id="password" type="password" bind:value={password} required />
+		</div>
 
-	<p>Bereits registriert? <a href="/">Anmelden</a></p>
-</form>
+		<div>
+			<label for="confirmPassword">Passwort bestätigen</label>
+			<input id="confirmPassword" type="password" bind:value={confirmPassword} required />
+		</div>
+
+		<button type="submit" disabled={loading}>
+			{loading ? 'Bitte warten...' : 'Registrieren'}
+		</button>
+
+		<p>Bereits registriert? <a href="/login">Anmelden</a></p>
+	</form>
+</div>
 
 <style>
 	form {
@@ -98,9 +104,4 @@
 	button:disabled {
 		background: #cccccc;
 	}
-
-	body, input, button, textarea,
-    .header-title, label, .error, .already-logged-in-box, a, p, h1, h2, h3, h4, h5, h6, div {
-        font-family: system-ui, sans-serif;
-    }
 </style>

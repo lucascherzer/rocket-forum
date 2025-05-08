@@ -9,7 +9,7 @@ export const isAuthenticated = writable(false);
 export async function checkAuthStatus(): Promise<boolean> {
 	try {
 		await apiRequest('/api/auth/check');
-		isAuthenticated.set(true);
+		isAuthenticated.set(true);		
 		return true;
 	} catch (error) {
 		console.error('Auth check failed:', error);
@@ -26,19 +26,7 @@ export async function login(username: string, password: string) {
 			body: JSON.stringify({ username, password })
 		});
 		return true;
-		// Nach dem Login explizit den Status erneut prüfen
-		// const authStatus = await checkAuthStatus();
 
-		// Nur wenn der Auth-Check erfolgreich war, als angemeldet betrachten
-		// 	if (authStatus) {
-		// 		console.log('Login erfolgreich und Auth-Status verifiziert');
-		// 		isAuthenticated.set(true);
-		// 		return true;
-		// 	} else {
-		// 		console.error('Login schien erfolgreich, aber Auth-Check fehlgeschlagen');
-		// 		isAuthenticated.set(false);
-		// 		return false;
-		// 	}
 	} catch (error) {
 		console.error('Login failed:', error);
 		isAuthenticated.set(false);

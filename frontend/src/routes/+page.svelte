@@ -41,7 +41,7 @@
                 <button class="login-success user-icon" aria-label="User menu" on:click={toggleOverlay}>&#128100;</button>
                 {#if showOverlay}
                     <div class="user-overlay" role="dialog" aria-label="User menu" tabindex="0" on:click|stopPropagation on:keydown={(e) => e.key === 'Escape' && closeOverlay()}>
-                        <button class="logout-button" on:click={handleLogout}>Logout</button>
+						<button class="logout-button" on:click={handleLogout}>Logout</button>
                     </div>
                     <button class="overlay-backdrop" aria-label="Close overlay" on:click={closeOverlay} on:keydown={(e) => e.key === 'Enter' && closeOverlay()}></button>
                 {/if}
@@ -62,33 +62,6 @@
 {/if}
 
 <style>
-    .sticky-header {
-        position: sticky;
-        top: 0;
-        width: 100%;
-        background: #f36906;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        z-index: 200;
-		border-radius: 8px;
-    }
-
-    .header-content {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 0.7rem 1.5rem;
-        position: relative;
-    }
-
-    .header-title {
-        margin: 0 auto;
-        font-size: 1.7rem;
-        font-weight: 700;
-        color: #333;
-        letter-spacing: 1px;
-    }
 
     .header-right {
         position: absolute;
@@ -193,8 +166,4 @@
         color: #666;
     }
 
-	body, input, button, textarea,
-    .header-title, label, .error, .already-logged-in-box, a, p, h1, h2, h3, h4, h5, h6, div {
-        font-family: system-ui, sans-serif;
-    }
 </style>

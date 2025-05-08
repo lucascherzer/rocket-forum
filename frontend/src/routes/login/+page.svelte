@@ -49,58 +49,32 @@
         <button on:click={goToIndex}>Zur Startseite</button>
     </div>
 {:else}
-    <form on:submit|preventDefault={handleSubmit}>
-        {#if error}
-            <div class="error">{error}</div>
-        {/if}
+    <div class="login-container">
+        <form on:submit|preventDefault={handleSubmit}>
+            {#if error}
+                <div class="error">{error}</div>
+            {/if}
 
-        <div>
-            <label for="username">Benutzername</label>
-            <input id="username" type="text" bind:value={username} required />
-        </div>
+            <div>
+                <label for="username">Benutzername</label>
+                <input id="username" type="text" bind:value={username} required />
+            </div>
 
-        <div>
-            <label for="password">Passwort</label>
-            <input id="password" type="password" bind:value={password} required />
-        </div>
+            <div>
+                <label for="password">Passwort</label>
+                <input id="password" type="password" bind:value={password} required />
+            </div>
 
-        <button type="submit" disabled={loading}>
-            {loading ? 'Bitte warten...' : 'Anmelden'}
-        </button>
+            <button type="submit" disabled={loading}>
+                {loading ? 'Bitte warten...' : 'Anmelden'}
+            </button>
 
-        <p>Noch kein Konto? <a href="/signup">Registrieren</a></p>
-    </form>
+            <p>Noch kein Konto? <a href="/signup">Registrieren</a></p>
+        </form>
+    </div>
 {/if}
 
 <style>
-    .sticky-header {
-        position: sticky;
-        top: 0;
-        width: 100%;
-        background: #f36906;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-        z-index: 200;
-        border-radius: 8px;
-        margin-bottom: 2rem;
-    }
-
-    .header-content {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 0.7rem 1.5rem;
-        position: relative;
-    }
-
-    .header-title {
-        margin: 0 auto;
-        font-size: 1.7rem;
-        font-weight: 700;
-        color: #333;
-        letter-spacing: 1px;
-    }
 
     form {
         max-width: 400px;
@@ -138,7 +112,7 @@
     }
 
     input {
-        width: 100%;
+        width: 95%;
         padding: 0.5rem;
         margin-bottom: 1rem;
     }
@@ -154,11 +128,6 @@
 
     button:disabled {
         background: #cccccc;
-    }
-
-    body, input, button, textarea,
-    .header-title, label, .error, .already-logged-in-box, a, p, h1, h2, h3, h4, h5, h6, div {
-        font-family: system-ui, sans-serif;
     }
 
 </style>
