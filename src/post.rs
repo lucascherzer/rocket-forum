@@ -1,9 +1,14 @@
 use std::collections::HashSet;
 
 use lazy_regex::regex;
-use rocket::{Responder, State, serde::json::Json};
+use rocket::{
+    Responder, State,
+    http::Status,
+    response::{self, content},
+    serde::json::Json,
+};
 use serde::{Deserialize, Serialize};
-use surrealdb::{RecordId, Surreal, engine::any::Any};
+use surrealdb::{Datetime, RecordId, Surreal, engine::any::Any};
 
 use crate::{auth::UserSession, dbg_print};
 
@@ -32,7 +37,7 @@ pub struct CreatePost {
     text: String,
 }
 
-/// This object is received by [create_comment]
+/// This object is received by [route_create_comment]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
 pub struct CreateComment {
@@ -40,7 +45,7 @@ pub struct CreateComment {
     text: String,
 }
 
-/// The result returned from the database used in [create_post]
+/// The result returned from the database used in [route_create_post]
 #[derive(Debug, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
 #[allow(dead_code)]
@@ -50,20 +55,20 @@ pub struct NewPostResult {
     r#out: RecordId,
 }
 
-/// The object returned by [create_post]. Is wrapped in `Json<>`
+/// The object returned by [route_create_post]. Is wrapped in `Json<>`
 #[derive(Debug, Deserialize, Clone, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct PostId {
     id: String,
 }
 
-/// The object returned by [create_comment]. Is wrapped in `Json<>`
+/// The object returned by [route_create_comment]. Is wrapped in `Json<>`
 #[derive(Debug, Deserialize, Clone, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct CommentId {
     id: String,
 }
-/// The object received by [like_post_or_comment]. Is wrapped in `Json<>`
+/// The object received by [route_like]. Is wrapped in `Json<>`
 /// Contains the record id of the comment or post it wants to register a like for.
 #[derive(Debug, Deserialize, Clone, Serialize)]
 #[serde(crate = "rocket::serde")]
@@ -170,6 +175,50 @@ pub async fn route_like(
         Ok(Some(false)) => Ok(()),
         _ => Err(PostError::DatabaseError("I have no clue what went wrong")),
     }
+}
+
+/// The object returned whenever a user wants to view a post
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(crate = "rocket::serde")]
+pub struct ViewPost {
+    id: String,
+    heading: String,
+    text: String,
+    hashtags: Vec<String>,
+    created_at: Datetime,
+}
+
+/// The possible errors returned by [route_get_latest_posts]
+#[derive(Responder, Debug)]
+pub enum GetLatestPostsError {
+    #[response(status = 400)]
+    InvalidInput(&'static str),
+}
+
+/// This route can be used to retrieve the latest posts.
+/// When called using the GET param `time_offset`, you can cut off posts
+/// at a certain date
+/// # Example
+/// ```sh
+/// curl http://localhost:8000/api/post/latest?time_offset=1970-01-01
+/// ```
+#[rocket::get("/latest?<time_offset>")]
+pub async fn route_get_latest_posts(
+    db: &State<Surreal<Any>>,
+    time_offset: Option<String>,
+) -> Result<Json<Vec<ViewPost>>, GetLatestPostsError> {
+    let mut query = db
+        .query(include_str!("queries/get_latest_posts.surql"))
+        .bind(("time_offset", time_offset.unwrap_or("1970-01-01".into())))
+        .await
+        .unwrap();
+    query
+        .take::<Vec<ViewPost>>(0)
+        .map_err(|_e| {
+            dbg_print!(_e);
+            GetLatestPostsError::InvalidInput("")
+        })
+        .map(|v| Json(v))
 }
 
 #[cfg(test)]

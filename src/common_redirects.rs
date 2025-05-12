@@ -1,7 +1,6 @@
 use rocket::{Request, http::CookieJar, response::Redirect};
 
 #[rocket::get("/")]
-
 pub fn route_frontend_index() -> Redirect {
     return Redirect::to("/index.html");
 }
