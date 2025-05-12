@@ -3,6 +3,7 @@
     import { goto } from '$app/navigation';
     import { checkAuthStatus, logout } from '$lib/stores/auth';
     import { onMount } from 'svelte';
+    import '../style/mainpage.css';
 
     let isLoading = true;
     let showOverlay = false;
@@ -21,6 +22,7 @@
     function handleLogout() {
         logout();
         showOverlay = false;
+        isAuthenticated = false;
     }
 
     function toggleOverlay() {
@@ -62,109 +64,3 @@
     </div>
 {/if}
 
-<style>
-
-    .header-right {
-        position: absolute;
-        right: 1.5rem;
-        display: flex;
-        align-items: center;
-    }
-
-    .login-button {
-        background-color: #4caf50;
-        color: white;
-        border: none;
-        padding: 0.5rem 1.2rem;
-        font-size: 1rem;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: background-color 0.2s;
-    }
-
-    .login-button:hover {
-        background-color: #3e9142;
-    }
-
-    .login-success.user-icon {
-        color: #4caf50;
-        font-size: 1.5rem;
-        font-weight: bold;
-        cursor: pointer;
-        border-radius: 10%;
-        padding: 0.2rem 0.4rem;
-        transition: background 0.2s;
-        outline: none;
-    }
-    .login-success.user-icon:focus,
-    .login-success.user-icon:hover {
-        background: #e8f5e9;
-		outline: none;
-    }
-
-    .user-overlay {
-        position: absolute;
-        top: 2.2rem;
-        right: 0;
-        background: #fff;
-        border: 1px solid #eee;
-        border-radius: 8px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.12);
-        padding: 1rem 1.2rem;
-        z-index: 300;
-        /*min-width: 120px;*/
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-    }
-
-    .logout-button {
-        background: #e53935;
-        color: #fff;
-        border: none;
-        border-radius: 4px;
-        padding: 0.5rem 1.2rem;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-    .logout-button:hover {
-        background: #b71c1c;
-    }
-
-    .overlay-backdrop {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: transparent;
-        z-index: 250;
-    }
-
-    .welcome-container {
-        max-width: 800px;
-        margin: 4rem auto;
-        text-align: center;
-        padding: 2rem;
-        border-radius: 8px;
-        background-color: white;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .welcome-text {
-        margin-bottom: 2.5rem;
-    }
-
-    p {
-        color: #666;
-        line-height: 1.6;
-        font-size: 1.1rem;
-        margin-bottom: 1rem;
-    }
-
-    .loading-indicator {
-        text-align: center;
-        margin-top: 3rem;
-        font-size: 1.2rem;
-        color: #666;
-    }
-
-</style>

@@ -3,6 +3,7 @@
     import { login, checkAuthStatus } from '$lib/stores/auth';
     import { goto } from '$app/navigation';
     import { onMount } from 'svelte';
+    import '../../style/login.css';
 
     let username = '';
     let password = '';
@@ -50,6 +51,7 @@
     </div>
 {:else}
     <div class="login-container">
+        <h1 class="login-title">Login</h1>
         <form on:submit|preventDefault={handleSubmit}>
             {#if error}
                 <div class="error">{error}</div>
@@ -57,7 +59,7 @@
 
             <div>
                 <label for="username">Benutzername</label>
-                <input id="username" type="text" bind:value={username} required />
+                <input  id="username" type="text" bind:value={username} required />
             </div>
 
             <div>
@@ -74,60 +76,3 @@
     </div>
 {/if}
 
-<style>
-
-    form {
-        max-width: 400px;
-        margin: 0 auto;
-    }
-
-    .already-logged-in-box {
-        max-width: 400px;
-        margin: 2rem auto;
-        padding: 2rem;
-        background: #e8f5e9;
-        border: 1px solid #b2dfdb;
-        border-radius: 8px;
-        text-align: center;
-    }
-
-    .already-logged-in-box button {
-        margin-top: 1rem;
-        padding: 0.5rem 1.2rem;
-        background: #4caf50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .error {
-        color: red;
-        margin-bottom: 1rem;
-    }
-
-    label {
-        display: block;
-        margin-bottom: 0.5rem;
-    }
-
-    input {
-        width: 95%;
-        padding: 0.5rem;
-        margin-bottom: 1rem;
-    }
-
-    button {
-        width: 100%;
-        padding: 0.5rem;
-        background: #4caf50;
-        color: white;
-        border: none;
-        cursor: pointer;
-    }
-
-    button:disabled {
-        background: #cccccc;
-    }
-
-</style>

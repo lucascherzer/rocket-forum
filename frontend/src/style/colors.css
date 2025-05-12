@@ -1,0 +1,8 @@
+/*Defines the colors*/
+:root {
+    --primary-color: rebeccapurple;
+    --secondary-color: #f5a623;
+    --accent-color: #e94e77;
+    --background-color: #f9f9f9;
+    --text-color: #222;
+  }

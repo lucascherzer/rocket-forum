@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { signup } from '$lib/stores/auth';
 	import { goto } from '$app/navigation';
+	import '../../style/signup.css';
 
 	let username = '';
 	let password = '';
@@ -35,13 +36,8 @@
 	}
 </script>
 
-<header class="sticky-header">
-	<div class="header-content">
-		<h1 class="header-title">Registrieren</h1>
-	</div>
-</header>
-
 <div class="login-container">
+	<h1 class="login-title">Registrieren</h1>
 	<form on:submit|preventDefault={handleSubmit}>
 		{#if error}
 			<div class="error">{error}</div>
@@ -70,38 +66,3 @@
 	</form>
 </div>
 
-<style>
-	form {
-		max-width: 400px;
-		margin: 0 auto;
-	}
-
-	.error {
-		color: red;
-		margin-bottom: 1rem;
-	}
-
-	label {
-		display: block;
-		margin-bottom: 0.5rem;
-	}
-
-	input {
-		width: 100%;
-		padding: 0.5rem;
-		margin-bottom: 1rem;
-	}
-
-	button {
-		width: 100%;
-		padding: 0.5rem;
-		background: #4caf50;
-		color: white;
-		border: none;
-		cursor: pointer;
-	}
-
-	button:disabled {
-		background: #cccccc;
-	}
-</style>

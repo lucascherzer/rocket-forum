@@ -1,3 +1,5 @@
+@import './colors.css';
+
 body, input, button, textarea,
 .header-title, label, .error, .already-logged-in-box, a, p, h1, h2, h3, h4, h5, h6, div {
     font-family: system-ui, sans-serif;
@@ -7,7 +9,7 @@ body, input, button, textarea,
     position: sticky;
     top: 0;
     width: 100%;
-    background: #4b5ef2;
+    background: var(--primary-color);
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     z-index: 200;
     border-radius: 8px;
@@ -30,14 +32,4 @@ body, input, button, textarea,
     font-weight: 700;
     color: #333;
     letter-spacing: 1px;
-}
-
-.login-container {
-    max-width: 400px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-    
 }
