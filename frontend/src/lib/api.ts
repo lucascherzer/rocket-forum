@@ -1,42 +1,42 @@
-const API_BASE_URL = 'http://127.0.0.1:8000'; // Wichtig: Hier 127.0.0.1 statt localhost verwenden
+const API_BASE_URL = 'http://127.0.0.1:8000';
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
-	const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${API_BASE_URL}${endpoint}`;
 
-	// Standard-Optionen für alle Anfragen
-	const defaultOptions: RequestInit = {
-		credentials: 'include', // Wichtig für Cookies/Sessions
-		headers: {
-			'Content-Type': 'application/json',
-			...options.headers
-		},
-		mode: 'cors' // Explizit CORS-Modus festlegen
-	};
+    // Default options for all requests
+    const defaultOptions: RequestInit = {
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        },
+        mode: 'cors'
+    };
 
-	try {
-		const response = await fetch(url, { ...defaultOptions, ...options });
+    try {
+        const response = await fetch(url, { ...defaultOptions, ...options });
 
-		// Erfolgreiche Antwort mit Status 302 (Redirect) behandeln
-		if (response.status === 302) {
-			console.log('Erfolgreich mit Redirect');
-			return true;
-		}
+        // Handle successful response with status 302 (Redirect)
+        if (response.status === 302) {
+            console.log('Success with redirect');
+            return true;
+        }
 
-		if (!response.ok) {
-			const errorText = await response.text();
-			console.error(`API-Fehler: ${errorText}`);
-			throw new Error(errorText || response.statusText);
-		}
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`API error: ${errorText}`);
+            throw new Error(errorText || response.statusText);
+        }
 
-		// Überprüfe, ob die Antwort JSON ist
-		const contentType = response.headers.get('content-type');
-		if (contentType && contentType.includes('application/json')) {
-			return response.json();
-		}
+        // Check if the response is JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        }
 
-		return response.text();
-	} catch (error) {
-		console.error('API-Anfrage fehlgeschlagen:', error);
-		throw error;
-	}
+        return response.text();
+    } catch (error) {
+        console.error('API request failed:', error);
+        throw error;
+    }
 }

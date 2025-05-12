@@ -1,32 +1,36 @@
 <!-- src/routes/login/+page.svelte -->
 <script lang="ts">
-    import { login, isAuthenticated } from '$lib/stores/auth';
+    import { login, checkAuthStatus } from '$lib/stores/auth';
     import { goto } from '$app/navigation';
+    import { onMount } from 'svelte';
 
     let username = '';
     let password = '';
     let loading = false;
     let error = '';
+    let authChecked = false;
+    let isLoggedIn = false;
+
+    onMount(async () => {
+        isLoggedIn = await checkAuthStatus();
+        authChecked = true;
+    });
 
     async function handleSubmit() {
         loading = true;
         error = '';
 
         try {
-            console.log('Login-Versuch für:', username);
             const success = await login(username, password);
-            console.log('Login-Ergebnis:', success);
-
             if (success) {
-                console.log('Weiterleitung zur Startseite nach erfolgreichem Login');
                 setTimeout(() => {
                     goto('/');
                 }, 100);
             } else {
-                error = 'Login fehlgeschlagen';
+                error = 'Login failed';
             }
         } catch (e) {
-            error = e instanceof Error ? e.message : 'Ein Fehler ist aufgetreten';
+            error = e instanceof Error ? e.message : 'An error occurred';
         } finally {
             loading = false;
         }
@@ -37,16 +41,12 @@
     }
 </script>
 
-<header class="sticky-header">
-    <div class="header-content">
-        <h1 class="header-title">Login</h1>
-    </div>
-</header>
-
-{#if $isAuthenticated}
+{#if !authChecked}
+    <div>Loading...</div>
+{:else if isLoggedIn}
     <div class="already-logged-in-box">
-        <p>Du bist bereits eingeloggt.</p>
-        <button on:click={goToIndex}>Zur Startseite</button>
+        <p>You are already logged in.</p>
+        <button on:click={goToIndex}>Go to Home</button>
     </div>
 {:else}
     <div class="login-container">
