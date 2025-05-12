@@ -1,6 +1,8 @@
 /target
 .env
+.fastembed_cache/
 frontend/.svelte-kit
 frontend/node_modules
 frontend/build
 static/
+history.txt
