@@ -38,7 +38,7 @@
     }
 
     function goToIndex() {
-        goto('/');
+        goto('/index.html');
     }
 </script>
 
