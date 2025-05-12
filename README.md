@@ -9,7 +9,17 @@
 The Webeng.json file can be imported into hoppscotch (and Postman?)
 and contains the API endpoints with examples for the project.
 
-## Notes
+## Running
+To run the app
+1. fill out the env values (you can make up a `SURREALDB_USER` and `SURREALDB_PASS`)
+2. start the database `docker compose up`
+3. start the server: `cargo run` or `cargo run --release` for optimized builds)
+
+## Docs
+The documentation can be automatically generated:
+```sh
+cargo doc --no-deps
+```
 
 ### env
 To run this application, you need to set up a valid `.env` file.
