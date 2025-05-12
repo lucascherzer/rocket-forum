@@ -11,21 +11,29 @@ and contains the API endpoints with examples for the project.
 
 ## Running
 To run the app
-1. fill out the env values (you can make up a `SURREALDB_USER` and `SURREALDB_PASS`)
-2. start the database `docker compose up`
-3. start the server: `cargo run` or `cargo run --release` for optimized builds)
+### Set up the environment
+Fill out the env values. See .env.example for the required values (you can make
+up a `SURREALDB_USER` and `SURREALDB_PASS`).
+```sh
+cp .env.example .env
+```
+If you intend to run the app in release mode, `ROCKET_SECRET_KEY` must be set.
+This file does not need to be sourced, it's presence suffices.
 
+### Start the database
+```sh
+docker compose up
+```
+### Start the server:
+```sh
+cargo run # for debug builds
+cargo run --release # for optimized builds
+```
 ## Docs
 The documentation can be automatically generated:
 ```sh
 cargo doc --no-deps
 ```
-
-### env
-To run this application, you need to set up a valid `.env` file.
-`.env.example` should show which options need to be set. Ask for the correct
-values if you are not sure.
-This file does not need to be sourced, it's presence suffices.
 
 ### State
 
