@@ -1,4 +1,4 @@
-use rocket::{Request, http::CookieJar, response::Redirect};
+use rocket::{http::CookieJar, response::Redirect};
 
 #[rocket::get("/")]
 

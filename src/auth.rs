@@ -1,4 +1,4 @@
-use std::{fs::create_dir, str::FromStr};
+use std::str::FromStr;
 
 use rocket::{
     Responder, State,

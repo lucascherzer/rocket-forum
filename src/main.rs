@@ -4,19 +4,24 @@ pub mod config;
 pub mod cors;
 pub mod db;
 pub mod error;
+pub mod fingerprinting;
 pub mod moderation;
 pub mod post;
+pub mod ratelimiting;
 pub mod util;
 
 extern crate rocket;
+
 use auth::{route_check, route_login, route_logout, route_signup};
+use fingerprinting::{Fingerprinter, init_embeddings_model, route_frontend_trackme, route_trackme};
 use rocket::fs::{FileServer, relative};
 
 use config::get_config;
 use cors::get_cors_config;
-use db::get_db;
+use db::{DbInitialiser, get_db};
 use moderation::route_delete;
 use post::{route_create_comment, route_create_post, route_like};
+use rocket_dyn_templates::Template;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
@@ -40,10 +45,16 @@ async fn init() -> Result<Surreal<Any>, surrealdb::Error> {
 async fn rocket() -> _ {
     let db = init().await.expect("Failed to connect to database");
     let cors_conf = get_cors_config().unwrap();
-
+    let embeddings_model = init_embeddings_model().unwrap();
+    let fingerprinting_middleware = Fingerprinter;
+    let db_initialiser = DbInitialiser;
     rocket::build()
         .manage(db)
+        .manage(embeddings_model)
+        .attach(db_initialiser)
         .attach(cors_conf)
+        .attach(fingerprinting_middleware)
+        .attach(Template::fairing())
         .mount(
             "/api/post",
             rocket::routes![
@@ -62,6 +73,8 @@ async fn rocket() -> _ {
             ],
         )
         .mount("/", FileServer::from(relative!("static/")).rank(10))
+        .mount("/api/", rocket::routes![route_trackme])
+        .mount("/", rocket::routes![route_frontend_trackme])
         .mount(
             "/api/auth",
             rocket::routes![route_signup, route_login, route_logout, route_check],
