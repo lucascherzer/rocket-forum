@@ -16,7 +16,7 @@ use config::get_config;
 use cors::get_cors_config;
 use db::get_db;
 use moderation::route_delete;
-use post::{route_create_comment, route_create_post, route_like};
+use post::{route_create_comment, route_create_post, route_get_latest_posts, route_like};
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
@@ -49,6 +49,7 @@ async fn rocket() -> _ {
             rocket::routes![
                 route_create_post,
                 route_create_comment,
+                route_get_latest_posts,
                 route_like,
                 route_delete
             ],
