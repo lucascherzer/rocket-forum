@@ -76,12 +76,21 @@ pub struct LikePostOrComment {
     subject: String,
 }
 
+/// [route_create_post] is the API route that is used to create posts (shocking,
+/// I know). It receives a JSON object in the body:
+/// ```json
+/// {
+///     "heading": "This is the posts heading",
+///     "text": "This is the posts text"
+/// }
+/// ```
 #[rocket::post("/new", data = "<data>")]
 pub async fn route_create_post(
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreatePost>,
 ) -> Option<Json<PostId>> {
+    // TODO: limit the length of heading and text
     let data = data.into_inner();
     let full_text = format!("{}{}", data.heading, data.text);
     let hashtags: Vec<String> = extract_hashtags(full_text).into_iter().collect();

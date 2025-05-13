@@ -7,6 +7,8 @@ use crate::{
     dbg_print,
 };
 
+/// [DeleteSubject] is the object received by the [route_delete] function.
+/// It is used to identify the type of subject to be deleted.
 #[derive(Deserialize, Serialize)]
 pub struct DeleteSubject {
     #[serde(rename = "type")]
@@ -19,7 +21,7 @@ pub struct DeleteSubject {
 /// ```json
 /// {
 ///     "type": "Posts|commented",
-///     "reason": "id"
+///     "id": "id"
 /// }
 /// Deletion here does not mean the post/comment is dropped from the database,
 /// it only means that the post/comment is no longer visible to the user.

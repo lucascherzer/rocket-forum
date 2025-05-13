@@ -15,3 +15,5 @@ rand = "0.8.5"
 thiserror = "1.0.64"
 rocket_cors = "0.6.0"
 lazy-regex = "3.4.1"
+fastembed = "4.8.0"
+rocket_dyn_templates = { version = "0.2.0", features = ["handlebars"] }
