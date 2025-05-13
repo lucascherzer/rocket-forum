@@ -5,6 +5,7 @@ pub mod cors;
 pub mod db;
 pub mod error;
 pub mod fingerprinting;
+pub mod minio;
 pub mod moderation;
 pub mod post;
 pub mod ratelimiting;
@@ -14,6 +15,8 @@ extern crate rocket;
 
 use auth::{route_check, route_login, route_logout, route_signup};
 use fingerprinting::{Fingerprinter, init_embeddings_model, route_frontend_trackme, route_trackme};
+use minio::get_minio;
+use minio_rsc::Minio;
 use rocket::fs::{FileServer, relative};
 
 use config::get_config;
@@ -25,31 +28,38 @@ use rocket_dyn_templates::Template;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
-async fn init() -> Result<Surreal<Any>, surrealdb::Error> {
-    let db_conf = get_config().expect("Failed to load configuration");
-    dbg_print!(&db_conf);
+async fn init() -> (Surreal<Any>, Minio) {
+    let server_conf = get_config().expect("Failed to load configuration");
+    dbg_print!(&server_conf);
     let db = get_db(
-        &db_conf.db_url.clone(),
-        &db_conf.db_ns.clone(),
-        &db_conf.db_db.clone(),
-        &db_conf.db_user.clone(),
-        &db_conf.db_pass.clone(),
+        &server_conf.db_url.clone(),
+        &server_conf.db_ns.clone(),
+        &server_conf.db_db.clone(),
+        &server_conf.db_user.clone(),
+        &server_conf.db_pass.clone(),
     )
     .await
     .expect("Failed to connect to database");
-
-    Ok(db)
+    let minio = get_minio(
+        &server_conf.minio_url,
+        &server_conf.minio_root_user,
+        &server_conf.minio_root_password,
+    )
+    .await
+    .expect("Could not connect to minio");
+    (db, minio)
 }
 
 #[rocket::launch]
 async fn rocket() -> _ {
-    let db = init().await.expect("Failed to connect to database");
+    let (db, minio) = init().await;
     let cors_conf = get_cors_config().unwrap();
     let embeddings_model = init_embeddings_model().unwrap();
     let fingerprinting_middleware = Fingerprinter;
     let db_initialiser = DbInitialiser;
     rocket::build()
         .manage(db)
+        .manage(minio)
         .manage(embeddings_model)
         .attach(db_initialiser)
         .attach(cors_conf)
