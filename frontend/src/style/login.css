@@ -3,18 +3,23 @@ form {
     margin: 0 auto;
 }
 
-body {
+.login-page-wrapper {
     margin: 0;
     padding: 0;
-    min-height: 100vh;
-    width: 100%;
+    min-height: 100vh; /* Stellt sicher, dass die Höhe mindestens die volle Viewport-Höhe beträgt */
+    width: 100vw; /* Stellt sicher, dass die Breite die volle Viewport-Breite beträgt */
     background-image: url('./rocket_background.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+    background-size: cover; /* Skaliert das Bild, um den Container vollständig zu bedecken, kann Teile abschneiden */
+    background-position: center; /* Zentriert das Bild */
+    background-repeat: no-repeat; /* Verhindert das Kacheln des Bildes */
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    overflow: hidden; /* Verhindert Scrollbalken auf diesem Element */
+    position: fixed; /* Positioniert den Wrapper relativ zum Viewport */
+    top: 0;
+    left: 0;
 }
 
 .login-container {
