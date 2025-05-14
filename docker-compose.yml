@@ -25,6 +25,7 @@ services:
       - ":9001"
     ports:
       - 9000:9000
+      - 9001:9001 # user interface. Remove in prod, useful for debugging
     healthcheck:
       test:
         - CMD

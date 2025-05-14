@@ -15,7 +15,7 @@ extern crate rocket;
 
 use auth::{route_check, route_login, route_logout, route_signup};
 use fingerprinting::{Fingerprinter, init_embeddings_model, route_frontend_trackme, route_trackme};
-use minio::get_minio;
+use minio::{MinioInitialiser, get_minio, route_image_upload};
 use minio_rsc::Minio;
 use rocket::fs::{FileServer, relative};
 
@@ -57,11 +57,13 @@ async fn rocket() -> _ {
     let embeddings_model = init_embeddings_model().unwrap();
     let fingerprinting_middleware = Fingerprinter;
     let db_initialiser = DbInitialiser;
+    let minio_initialiser = MinioInitialiser;
     rocket::build()
         .manage(db)
         .manage(minio)
         .manage(embeddings_model)
         .attach(db_initialiser)
+        .attach(minio_initialiser)
         .attach(cors_conf)
         .attach(fingerprinting_middleware)
         .attach(Template::fairing())
@@ -83,6 +85,7 @@ async fn rocket() -> _ {
                 common_redirects::route_frontend_index
             ],
         )
+        .mount("/api/upload/", rocket::routes![route_image_upload])
         .mount("/", FileServer::from(relative!("static/")).rank(10))
         .mount("/api/", rocket::routes![route_trackme])
         .mount("/", rocket::routes![route_frontend_trackme])
