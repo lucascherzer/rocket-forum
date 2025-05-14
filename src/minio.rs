@@ -1,16 +1,16 @@
 use bytes::Bytes;
-// use minio::s3::response::BucketExistsResponse;
 use minio_rsc::Minio;
 use minio_rsc::provider::StaticProvider;
 use rocket::data::ByteUnit;
 use rocket::fairing::{Fairing, Kind};
-use rocket::local::asynchronous::Client;
+use rocket::http::ContentType;
+use rocket::tokio::io::AsyncReadExt; // for .read()
 use rocket::{Data, serde::json::Json};
 use rocket::{Orbit, Responder, Rocket, State};
 use serde::Serialize;
-use tokio::io::AsyncReadExt;
-pub static IMAGE_BUCKET_NAME: &str = "rf-images";
+
 use crate::auth::UserSession;
+pub static IMAGE_BUCKET_NAME: &str = "rf-images";
 
 ///
 // pub async fn create_bucket_if_not_exists(
@@ -82,16 +82,45 @@ pub enum UploadError {
     FileSizeExceeded(&'static str),
     #[response(status = 500)]
     MinioError(&'static str),
+    #[response(status = 403)]
+    UnsupportedMediaType(&'static str),
 }
 
+/// This file takes a file as a buffer and checks if its file header matches
+/// a known image header.
+fn is_image_header(buffer: &[u8]) -> bool {
+    match buffer {
+        b if b.starts_with(&[0xFF, 0xD8, 0xFF]) => true, // JPEG
+        b if b.starts_with(&[0x89, b'P', b'N', b'G']) => true, // PNG
+        b if b.starts_with(b"GIF87a") || b.starts_with(b"GIF89a") => true, // GIF
+        b if b.starts_with(b"RIFF") && b.len() > 12 && &b[8..12] == b"WEBP" => true, // WEBP
+        _ => false,
+    }
+}
+/// This route can be used to upload images
+/// Example:
+/// ```sh
+/// curl -X POST --data-binary @image.webp \
+///     http://localhost:8000/api/upload/file \
+///     -H 'Content-Type: image/webp' \
+///     -H 'Cookie: session_id=<a valid session id>; SameSite=Strict; Path=/A'
+/// ```
+/// It requires the `Content-Type` header to be set to any `image/` variant and
+/// the data being a valid image.
+///
+/// It acceppts jpg, png, gif and webp.
 #[rocket::post("/file", data = "<file>")]
 pub async fn route_image_upload(
-    // _user: UserSession,
+    _user: UserSession,
+    content_type: &ContentType,
     minio: &State<Minio>,
     file: Data<'_>,
 ) -> Result<Json<ImageUpload>, UploadError> {
-    use rocket::data::ByteUnit;
-    use rocket::tokio::io::AsyncReadExt; // for .read()
+    if !content_type.is_known() || content_type.top() != "image" {
+        return Err(UploadError::UnsupportedMediaType(
+            "Only image uploads are allowed",
+        ));
+    }
 
     // Only accept certain mime types (TODO)
 
@@ -112,7 +141,11 @@ pub async fn route_image_upload(
         hasher.update(&chunk[..n]);
         buffer.extend_from_slice(&chunk[..n]);
     }
-
+    if !is_image_header(&buffer) {
+        return Err(UploadError::UnsupportedMediaType(
+            "File is not a valid or supported image",
+        ));
+    }
     let image_id = hasher.finalize().to_hex().to_string();
     minio
         .put_object(
