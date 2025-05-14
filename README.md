@@ -4,7 +4,7 @@
 '''cargo run'''
 
 ## Tech Stack
-![[assets/techstack.svg]]
+![](assets/techstack.svg)
 
 ## API Testing
 The Webeng.json file can be imported into hoppscotch (and Postman?)
