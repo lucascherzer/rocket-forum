@@ -173,7 +173,6 @@ impl Fairing for Fingerprinter {
         _request: &'r Request<'_>,
         response: &mut rocket::Response<'r>,
     ) {
-        // Don't change a successful user's response, ever.
         if response.status() != rocket::http::Status::NotFound {
             return;
         }
