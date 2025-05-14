@@ -4,9 +4,7 @@
 '''cargo run'''
 
 ## Tech Stack
-- backend: Rust + Rocket
-- frontend: Svelte
-- db: SurrealDB
+![[assets/techstack.svg]]
 
 ## API Testing
 The Webeng.json file can be imported into hoppscotch (and Postman?)
