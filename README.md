@@ -1,8 +1,5 @@
 # Web Engineering Project
 
-## How to run
-'''cargo run'''
-
 ## Tech Stack
 ![](assets/techstack.svg)
 
@@ -38,14 +35,12 @@ cargo doc --no-deps
 
 ### State
 
-The webserver is completely stateless as it saves all persistent state in
-a SurrealDB cloud instance. This means it can easily be scaled using a load
-balancer.
-
-> [!warning] File Upload
-> This is correct at the time of writing. But we do not have image uploads yet.
-> For images we may want to use the S3 free tier.
+The webserver is completely stateless as it saves all persistent database state
+in a SurrealDB instance (local or cloud, depends on .env).
+Similarly, all uploaded images are saved to a minio instance.
+This means that the server can easily be scaled using a load balancer.
 
 > [!warning] DDoS Protection
 > We want to have rate-limiting while the server can remain stateless.
-> It is not yet implemented but being worked on.
+> It is not yet implemented but being worked on. We aim to use redis as a
+> ephemeral storage.
