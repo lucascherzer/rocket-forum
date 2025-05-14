@@ -1,4 +1,3 @@
-use bytes::Bytes;
 use minio_rsc::Minio;
 use minio_rsc::provider::StaticProvider;
 use rocket::data::ByteUnit;
@@ -97,7 +96,8 @@ fn is_image_header(buffer: &[u8]) -> bool {
         _ => false,
     }
 }
-/// This route can be used to upload images
+/// This route can be used to upload images. The images are saved as their
+/// BLAKE3 hash in the minio instance.
 /// Example:
 /// ```sh
 /// curl -X POST --data-binary @image.webp \
