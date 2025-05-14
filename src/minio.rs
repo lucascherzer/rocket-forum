@@ -1,4 +1,7 @@
+use std::collections::HashMap;
+
 use minio_rsc::Minio;
+use minio_rsc::client::KeyArgs;
 use minio_rsc::provider::StaticProvider;
 use rocket::data::ByteUnit;
 use rocket::fairing::{Fairing, Kind};
@@ -85,15 +88,24 @@ pub enum UploadError {
     UnsupportedMediaType(&'static str),
 }
 
+#[derive(Debug)]
+enum SupportedImage {
+    JPG,
+    PNG,
+    GIF,
+    WEBP,
+}
 /// This file takes a file as a buffer and checks if its file header matches
 /// a known image header.
-fn is_image_header(buffer: &[u8]) -> bool {
+fn identify_image(buffer: &[u8]) -> Option<SupportedImage> {
     match buffer {
-        b if b.starts_with(&[0xFF, 0xD8, 0xFF]) => true, // JPEG
-        b if b.starts_with(&[0x89, b'P', b'N', b'G']) => true, // PNG
-        b if b.starts_with(b"GIF87a") || b.starts_with(b"GIF89a") => true, // GIF
-        b if b.starts_with(b"RIFF") && b.len() > 12 && &b[8..12] == b"WEBP" => true, // WEBP
-        _ => false,
+        b if b.starts_with(&[0xFF, 0xD8, 0xFF]) => Some(SupportedImage::JPG), // JPEG
+        b if b.starts_with(&[0x89, b'P', b'N', b'G']) => Some(SupportedImage::PNG), // PNG
+        b if b.starts_with(b"GIF87a") || b.starts_with(b"GIF89a") => Some(SupportedImage::GIF), // GIF
+        b if b.starts_with(b"RIFF") && b.len() > 12 && &b[8..12] == b"WEBP" => {
+            Some(SupportedImage::WEBP) // WEBP
+        }
+        _ => None,
     }
 }
 /// This route can be used to upload images. The images are saved as their
@@ -111,7 +123,7 @@ fn is_image_header(buffer: &[u8]) -> bool {
 /// It acceppts jpg, png, gif and webp.
 #[rocket::post("/file", data = "<file>")]
 pub async fn route_image_upload(
-    _user: UserSession,
+    user: UserSession,
     content_type: &ContentType,
     minio: &State<Minio>,
     file: Data<'_>,
@@ -121,8 +133,6 @@ pub async fn route_image_upload(
             "Only image uploads are allowed",
         ));
     }
-
-    // Only accept certain mime types (TODO)
 
     let mut buffer = Vec::with_capacity(10 * 1024 * 1024);
     let mut stream = file.open(ByteUnit::Megabyte(10));
@@ -141,18 +151,21 @@ pub async fn route_image_upload(
         hasher.update(&chunk[..n]);
         buffer.extend_from_slice(&chunk[..n]);
     }
-    if !is_image_header(&buffer) {
-        return Err(UploadError::UnsupportedMediaType(
-            "File is not a valid or supported image",
-        ));
-    }
+    let img_type = match identify_image(&buffer) {
+        Some(img) => img,
+        None => {
+            return Err(UploadError::UnsupportedMediaType(
+                "File is not a valid or supported image",
+            ));
+        }
+    };
+    let mut metadata: HashMap<String, String> = HashMap::new();
+    metadata.insert("Owner".into(), user.user_id.to_string());
+    metadata.insert("ImgType".into(), format!("{:?}", img_type));
     let image_id = hasher.finalize().to_hex().to_string();
+    let key = KeyArgs::new(image_id.clone()).metadata(metadata);
     minio
-        .put_object(
-            IMAGE_BUCKET_NAME,
-            image_id.clone(),
-            bytes::Bytes::from(buffer),
-        )
+        .put_object(IMAGE_BUCKET_NAME, key, bytes::Bytes::from(buffer))
         .await
         .map_err(|_e| UploadError::FileSizeExceeded("Failed to persistently save file"))?;
 
