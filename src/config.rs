@@ -67,6 +67,7 @@ pub fn get_config() -> Option<Config> {
     })
 }
 
+/// Helper function to convert a string of hex chars into an Arc<[u8; 256]>
 fn decode_hex_to_arc_array(hex_str: &str) -> Result<ImageHashIv, String> {
     if hex_str.len() != 512 {
         return Err("Hex string must be exactly 512 characters".to_string());
