@@ -13,7 +13,7 @@
 //! # Performance
 //! Generating embeddings for every request is very resource intensive, and
 //! not worth the advantage it gives. Frankly it's an overengineered, mostly
-//! useless when factoring in its cost piece of code that could be implemented
+//! useless when factoring in its cost, piece of code that could be implemented
 //! in a simpler fashion. But it could be sped up significantly by using a
 //! custom made vectorisation primitive
 use std::{iter::zip, net::IpAddr};
