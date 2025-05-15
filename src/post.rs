@@ -192,16 +192,49 @@ pub async fn route_like(
 pub struct ViewPost {
     id: String,
     heading: String,
+    images: Vec<String>,
     text: String,
     hashtags: Vec<String>,
     created_at: Datetime,
 }
 
-/// The possible errors returned by [route_get_latest_posts]
+/// The possible errors returned by [route_get_latest_posts] and [route_get_post]
 #[derive(Responder, Debug)]
-pub enum GetLatestPostsError {
+pub enum GetPostsError {
     #[response(status = 400)]
     InvalidInput(&'static str),
+    #[response(status = 500)]
+    DatabaseError(&'static str),
+    #[response(status = 404)]
+    NotFound(&'static str),
+}
+
+#[rocket::get("/<post_id>")]
+pub async fn route_get_post(
+    db: &State<Surreal<Any>>,
+    post_id: String,
+) -> Result<Json<ViewPost>, GetPostsError> {
+    if post_id.starts_with("Posts:") {
+        return Err(GetPostsError::InvalidInput(
+            "The post id should not start with `Posts:`. Only send the part after the colon.",
+        ));
+    }
+    let mut query = db
+        .query(include_str!("queries/get_post.surql"))
+        .bind(("post_id", post_id))
+        .await
+        .unwrap();
+    let res = query
+        .take::<Vec<ViewPost>>(0)
+        .map_err(|_e| GetPostsError::DatabaseError(""))?;
+    if let Some(post) = res.get(0) {
+        Ok(Json(post.clone()))
+    } else {
+        dbg_print!("{}", &res);
+        Err(GetPostsError::NotFound(
+            "No post with that id could be found",
+        ))
+    }
 }
 
 /// This route can be used to retrieve the latest posts.
@@ -215,7 +248,7 @@ pub enum GetLatestPostsError {
 pub async fn route_get_latest_posts(
     db: &State<Surreal<Any>>,
     time_offset: Option<String>,
-) -> Result<Json<Vec<ViewPost>>, GetLatestPostsError> {
+) -> Result<Json<Vec<ViewPost>>, GetPostsError> {
     let mut query = db
         .query(include_str!("queries/get_latest_posts.surql"))
         .bind(("time_offset", time_offset.unwrap_or("1970-01-01".into())))
@@ -225,7 +258,7 @@ pub async fn route_get_latest_posts(
         .take::<Vec<ViewPost>>(0)
         .map_err(|_e| {
             dbg_print!(_e);
-            GetLatestPostsError::InvalidInput("")
+            GetPostsError::InvalidInput("")
         })
         .map(|v| Json(v))
 }
