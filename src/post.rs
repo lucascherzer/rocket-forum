@@ -209,6 +209,9 @@ pub enum GetPostsError {
     NotFound(&'static str),
 }
 
+/// Get a post by id.
+/// Takes the Posts id (specifically the part after the colon), and returns all
+/// fields except `deleted`. See [ViewPost]
 #[rocket::get("/<post_id>")]
 pub async fn route_get_post(
     db: &State<Surreal<Any>>,
