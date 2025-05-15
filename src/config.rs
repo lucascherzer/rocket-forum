@@ -10,6 +10,9 @@ use std::sync::Arc;
 /// The [ImageHashIv] is derived from the env var `MINIO_IMG_HASH_IV`, and must
 /// be the same on all servers (that is, if more than one is deployed behind a
 /// load balancer)
+/// # TODO:
+/// Evaluate whether we want to use the DB to store this state, or keep it as
+/// an env var
 pub type ImageHashIv = Arc<[u8; 256]>;
 
 #[derive(Debug)]
