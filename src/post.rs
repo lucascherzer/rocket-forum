@@ -26,7 +26,6 @@ pub enum PostError {
 
 /// This contains the logic for creating posts and commenting on them
 // TODO
-// - Like/Dislike
 // - Get posts by some criteria (newest, hashtags, user)
 
 #[derive(Deserialize)]
