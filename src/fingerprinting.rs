@@ -4,6 +4,7 @@
 //! - user_agent
 //! - client_ip
 //! - session_id Cookie
+//!
 //! more could be added with relative ease in the future.
 //! # Embedding
 //! We use an embeddings model to vectorize said parameters, storing the points
