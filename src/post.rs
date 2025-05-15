@@ -1,16 +1,16 @@
 use std::collections::HashSet;
 
 use lazy_regex::regex;
-use rocket::{
-    Responder, State,
-    http::Status,
-    response::{self, content},
-    serde::json::Json,
-};
+use minio_rsc::{Minio, client::CopySource};
+use rocket::{Responder, State, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId, Surreal, engine::any::Any};
 
-use crate::{auth::UserSession, dbg_print};
+use crate::{
+    auth::UserSession,
+    dbg_print,
+    minio::{IMG_BUCKET_NAME, TMP_IMG_BUCKET_NAME},
+};
 
 #[non_exhaustive]
 #[derive(Responder, Debug)]
@@ -32,9 +32,20 @@ pub enum PostError {
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct CreatePost {
+    /// The heading of the post
     heading: String,
     // TODO: figure out how to add files to this
+    /// The text body of the post.
     text: String,
+
+    /// The list of images attached to the post. Can be omitted if it is a text
+    /// only post.
+    images: Option<Vec<String>>,
+    // ^ usually Option<Vec<T>>s are bad, as you could just use a vec of length
+    // 0, but if the client omits the images entirely, this route would not
+    // be triggered. So, to let the client omit the `images` field, and not
+    // requiring the client to explicitly set `"images": []`, we make it an
+    // Option
 }
 
 /// This object is received by [route_create_comment]
@@ -89,11 +100,34 @@ pub async fn route_create_post(
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreatePost>,
+    minio: &State<Minio>,
 ) -> Option<Json<PostId>> {
     // TODO: limit the length of heading and text
+    // TODO: Proper error handling via Result<Json..., Custom Error Type>
     let data = data.into_inner();
     let full_text = format!("{}{}", data.heading, data.text);
     let hashtags: Vec<String> = extract_hashtags(full_text).into_iter().collect();
+
+    // before creating the post: check if all images are present, if they are,
+    // move them to the permanent bucket
+    if let Some(images) = &data.images {
+        for img_name in images {
+            if let Ok(_) = minio.get_object(TMP_IMG_BUCKET_NAME, img_name).await {
+                let tmp_obj_ref = CopySource::new(TMP_IMG_BUCKET_NAME, img_name);
+                minio
+                    .copy_object(IMG_BUCKET_NAME, img_name, tmp_obj_ref)
+                    .await
+                    .ok()?;
+                minio
+                    .remove_object(TMP_IMG_BUCKET_NAME, img_name)
+                    .await
+                    .ok()?;
+            } else {
+                // TODO: keep track of uploaded images, delete if one fails
+                panic!("Image '{}' is not known", img_name);
+            }
+        }
+    }
 
     let mut res = db
         .query(include_str!("queries/create_post.surql"))
@@ -101,6 +135,7 @@ pub async fn route_create_post(
         .bind(("text", data.text))
         .bind(("user", user.user_id))
         .bind(("hashtags", hashtags))
+        .bind(("images", data.images))
         .await
         .ok()?; // Early return on error
 

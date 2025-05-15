@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use minio_rsc::Minio;
-use minio_rsc::client::KeyArgs;
+use minio_rsc::client::{KeyArgs, ObjectLockConfig};
 use minio_rsc::provider::StaticProvider;
 use rocket::data::ByteUnit;
 use rocket::fairing::{Fairing, Kind};
@@ -13,22 +13,34 @@ use serde::Serialize;
 
 use crate::auth::UserSession;
 use crate::config::ImageHashIv;
-pub static IMAGE_BUCKET_NAME: &str = "rf-images";
+use crate::dbg_print;
 
-///
-// pub async fn create_bucket_if_not_exists(
-//     bucket_name: &str,
-//     client: &Client,
-// ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-//     // Check 'bucket_name' bucket exist or not.
-//     let resp: BucketExistsResponse = client.bucket_exists(bucket_name).send().await?;
+/// The name of the bucket where images are store once they are used in a post
+pub static IMG_BUCKET_NAME: &str = "rf-images";
+/// The name of the bucket where temporary images (ones that are part of a not
+/// yet) published post are stored.
+/// We store those separately so that we can easily garbage collect them.
+pub static TMP_IMG_BUCKET_NAME: &str = "rf-images-tmp";
 
-//     // Make 'bucket_name' bucket if not exist.
-//     if !resp.exists {
-//         client.create_bucket(bucket_name).send().await.unwrap();
-//     };
-//     Ok(())
-// }
+/// This is called once when initialising the minio instance.
+/// It sets the default retention of the bucket [TMP_IMAGE_BUCKET_NAME] to 1 day
+async fn set_default_retention(minio: &Minio) -> Result<(), ()> {
+    let tmp_object_lock_config = ObjectLockConfig::new(1, true, true);
+    minio
+        .set_object_lock_config(TMP_IMG_BUCKET_NAME, tmp_object_lock_config)
+        .await
+        .expect("Could not set retention policy on temporary image bucket");
+    Ok(())
+}
+
+/// Generates [KeyArgs] based on metadata.
+pub fn generate_key_args(img_name: &String, owner: String, img_type: &SupportedImage) -> KeyArgs {
+    let mut metadata: HashMap<String, String> = HashMap::new();
+    metadata.insert("Owner".into(), owner);
+    metadata.insert("ImgType".into(), format!("{:?}", &img_type));
+    KeyArgs::new(img_name).metadata(metadata)
+}
+
 pub async fn get_minio(
     minio_endpoint: &str,
     minio_access_key: &str,
@@ -58,20 +70,60 @@ impl Fairing for MinioInitialiser {
 
     async fn on_liftoff(&self, rocket: &Rocket<Orbit>) {
         let minio = rocket.state::<Minio>().unwrap();
-        let _ = init_minio(minio).await.unwrap();
+        let _ = init_minio(minio).await.expect("Failed to initialise minio");
     }
 }
 
-pub async fn init_minio(minio: &Minio) -> Option<()> {
-    if minio.bucket_exists(IMAGE_BUCKET_NAME).await.ok()? {
-        return Some(());
-    } else {
-        return minio
-            .make_bucket(IMAGE_BUCKET_NAME, false)
+pub async fn init_minio(minio: &Minio) -> Result<(), ()> {
+    dbg_print!("Initialising minio");
+    let (img_bucket_exists, tmp_img_bucket_exists) = (
+        minio
+            .bucket_exists(IMG_BUCKET_NAME)
+            .await
+            .expect("Could not determine whether image bucket exists"),
+        minio
+            .bucket_exists(TMP_IMG_BUCKET_NAME)
+            .await
+            .expect("Could not determine whether temporary image bucket exists"),
+    );
+    let init_img_bucket = async || {
+        dbg_print!("Creating img bucket");
+        let _ = minio
+            .make_bucket(IMG_BUCKET_NAME, false)
             .await
             .map(|_i| ())
-            .ok();
-    }
+            .expect("Could not create image bucket");
+    };
+    let init_tmp_img_bucket = async || {
+        dbg_print!("Creating tmp img bucket");
+        let _ = minio
+            .make_bucket(TMP_IMG_BUCKET_NAME, true)
+            .await
+            .map(|_i| ())
+            .expect("Could not create temporary image bucket");
+        let _ = set_default_retention(&minio)
+            .await
+            .expect("Could not set retention policy");
+    };
+    match (img_bucket_exists, tmp_img_bucket_exists) {
+        (false, false) => {
+            dbg_print!("Creating img bucket");
+            let b = init_img_bucket();
+            let t = init_tmp_img_bucket();
+            t.await;
+            b.await;
+        }
+        (true, false) => {
+            init_tmp_img_bucket().await;
+        }
+        (false, true) => {
+            init_img_bucket().await;
+        }
+        (true, true) => {
+            dbg_print!("Minio is already initialised")
+        }
+    };
+    Ok(())
 }
 
 #[derive(Serialize)]
@@ -90,7 +142,7 @@ pub enum UploadError {
 }
 
 #[derive(Debug)]
-enum SupportedImage {
+pub enum SupportedImage {
     JPG,
     PNG,
     GIF,
@@ -162,13 +214,10 @@ pub async fn route_image_upload(
             ));
         }
     };
-    let mut metadata: HashMap<String, String> = HashMap::new();
-    metadata.insert("Owner".into(), user.user_id.to_string());
-    metadata.insert("ImgType".into(), format!("{:?}", img_type));
     let image_id = hasher.finalize().to_hex().to_string();
-    let key = KeyArgs::new(image_id.clone()).metadata(metadata);
+    let key = generate_key_args(&image_id, user.user_id.to_string(), &img_type);
     minio
-        .put_object(IMAGE_BUCKET_NAME, key, bytes::Bytes::from(buffer))
+        .put_object(TMP_IMG_BUCKET_NAME, key, bytes::Bytes::from(buffer))
         .await
         .map_err(|_e| UploadError::FileSizeExceeded("Failed to persistently save file"))?;
 
