@@ -44,6 +44,13 @@ pub struct Fingerprinter;
 /// src/queries/check_nearest_fingerprint.
 /// It comes in two flavours: `found_before` and `created` being set,
 /// or `found_before` and `nearest_neighbour` being set.
+/// # Note
+/// Having this configuration with mutual exclusivity is bad, as it enables
+/// invalid states (both are unset or both are set) and we lose out on the
+/// compilers strict type checking. Ideally we would want to
+/// make this two separate structs (and maybe combine them in an enum), but this
+/// makes deserialising the database result more verbose. So we leave it like
+/// this for now
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NnSearchResult {
     /// When found_before is true, that means the database has identified
