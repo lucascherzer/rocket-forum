@@ -34,11 +34,11 @@ DEFINE ANALYZER IF NOT EXISTS fingerprint_analyzer TOKENIZERS BLANK,CLASS,CAMEL,
 
 DEFINE TABLE IF NOT EXISTS ClientFingerprints TYPE NORMAL SCHEMAFULL PERMISSIONS NONE;
 
-DEFINE FIELD embeddings ON ClientFingerprints TYPE array<number> PERMISSIONS FULL;
-DEFINE FIELD embeddings[*] ON ClientFingerprints TYPE number PERMISSIONS FULL;
-DEFINE FIELD session_id ON ClientFingerprints TYPE string PERMISSIONS FULL;
-DEFINE FIELD source_ip ON ClientFingerprints PERMISSIONS FULL;
-DEFINE FIELD user_agent ON ClientFingerprints TYPE string PERMISSIONS FULL;
+DEFINE FIELD IF NOT EXISTS embeddings ON ClientFingerprints TYPE array<number> PERMISSIONS FULL;
+DEFINE FIELD IF NOT EXISTS embeddings[*] ON ClientFingerprints TYPE number PERMISSIONS FULL;
+DEFINE FIELD IF NOT EXISTS session_id ON ClientFingerprints TYPE string PERMISSIONS FULL;
+DEFINE FIELD IF NOT EXISTS source_ip ON ClientFingerprints PERMISSIONS FULL;
+DEFINE FIELD IF NOT EXISTS user_agent ON ClientFingerprints TYPE string PERMISSIONS FULL;
 
 
 DEFINE INDEX IF NOT EXISTS fingerprint_index ON ClientFingerprints
