@@ -19,7 +19,7 @@ use minio::{MinioInitialiser, get_minio, route_image_upload};
 use minio_rsc::Minio;
 use rocket::fs::{FileServer, relative};
 
-use config::get_config;
+use config::{ImageHashIv, get_config};
 use cors::get_cors_config;
 use db::{DbInitialiser, get_db};
 use moderation::route_delete;
@@ -28,7 +28,7 @@ use rocket_dyn_templates::Template;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
-async fn init() -> (Surreal<Any>, Minio) {
+async fn init() -> (Surreal<Any>, Minio, ImageHashIv) {
     let server_conf = get_config().expect("Failed to load configuration");
     dbg_print!(&server_conf);
     let db = get_db(
@@ -47,12 +47,12 @@ async fn init() -> (Surreal<Any>, Minio) {
     )
     .await
     .expect("Could not connect to minio");
-    (db, minio)
+    (db, minio, server_conf.minio_img_hash_iv)
 }
 
 #[rocket::launch]
 async fn rocket() -> _ {
-    let (db, minio) = init().await;
+    let (db, minio, hash_iv) = init().await;
     let cors_conf = get_cors_config().unwrap();
     let embeddings_model = init_embeddings_model().unwrap();
     let fingerprinting_middleware = Fingerprinter;
@@ -62,6 +62,7 @@ async fn rocket() -> _ {
         .manage(db)
         .manage(minio)
         .manage(embeddings_model)
+        .manage(hash_iv)
         .attach(db_initialiser)
         .attach(minio_initialiser)
         .attach(cors_conf)

@@ -12,6 +12,7 @@ use rocket::{Orbit, Responder, Rocket, State};
 use serde::Serialize;
 
 use crate::auth::UserSession;
+use crate::config::ImageHashIv;
 pub static IMAGE_BUCKET_NAME: &str = "rf-images";
 
 ///
@@ -127,6 +128,7 @@ pub async fn route_image_upload(
     content_type: &ContentType,
     minio: &State<Minio>,
     file: Data<'_>,
+    iv: &State<ImageHashIv>,
 ) -> Result<Json<ImageUpload>, UploadError> {
     if !content_type.is_known() || content_type.top() != "image" {
         return Err(UploadError::UnsupportedMediaType(
@@ -138,6 +140,7 @@ pub async fn route_image_upload(
     let mut stream = file.open(ByteUnit::Megabyte(10));
 
     let mut hasher = blake3::Hasher::new();
+    hasher.update(&iv[..]);
     let mut chunk = [0u8; 256];
 
     loop {
