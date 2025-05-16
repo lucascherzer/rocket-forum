@@ -5,5 +5,6 @@ SELECT
     text,
     heading,
     images,
-    <string> record::id((<-created<-Users.id)[0]) AS author
+    <string> record::id((<-created<-Users.id)[0]) AS author,
+    <-commented.id.map(|$c| <string> record::id($c)) AS comments
 FROM Posts WHERE deleted = false AND id = type::thing("Posts", $post_id);
