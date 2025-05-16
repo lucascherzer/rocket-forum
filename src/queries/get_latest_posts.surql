@@ -7,4 +7,4 @@ SELECT
     hashtags
 FROM Posts
 WHERE deleted = false AND created_at > type::datetime($time_offset)
-ORDER BY created_at;
+ORDER BY created_at DESC;
