@@ -19,9 +19,10 @@ use minio::{MinioInitialiser, get_minio, route_image_upload};
 use minio_rsc::Minio;
 use rocket::fs::{FileServer, relative};
 
-use config::{ImageHashIv, get_config};
+use config::get_config;
 use cors::get_cors_config;
 use db::{DbInitialiser, get_db};
+use minio::ImageHashIv;
 use moderation::route_delete;
 use post::{route_create_comment, route_create_post, route_get_latest_posts, route_like};
 use rocket_dyn_templates::Template;

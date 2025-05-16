@@ -13,6 +13,7 @@
 //! and if the post is published via [crate::post::route_create_post], the image
 //! is moved to the persistent storage.
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use minio_rsc::Minio;
 use minio_rsc::client::{KeyArgs, ObjectLockConfig};
@@ -26,8 +27,22 @@ use rocket::{Orbit, Responder, Rocket, State};
 use serde::Serialize;
 
 use crate::auth::UserSession;
-use crate::config::ImageHashIv;
 use crate::dbg_print;
+
+/// This is important for how we store images.
+/// Images are stored in minio and addressed by their blake3 hash.
+/// We use an initialisation vector when hashing images.
+/// This is to ensure clients can not find out whether we store arbitrary images
+/// by simply requesting their hash.
+/// It is just a 256 byte array wrapped in an Arc for thread safety.
+/// # Important
+/// The [ImageHashIv] is derived from the env var `MINIO_IMG_HASH_IV`, and must
+/// be the same on all servers (that is, if more than one is deployed behind a
+/// load balancer)
+/// # TODO:
+/// Evaluate whether we want to use the DB to store this state, or keep it as
+/// an env var
+pub type ImageHashIv = Arc<[u8; 256]>;
 
 /// The name of the bucket where images are store once they are used in a post
 pub static IMG_BUCKET_NAME: &str = "rf-images";

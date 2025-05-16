@@ -1,21 +1,10 @@
 //! This module covers server configuration at startup.
 use std::sync::Arc;
 
-/// This is important for how we store images.
-/// Images are stored in minio and addressed by their blake3 hash.
-/// We use an initialisation vector when hashing images.
-/// This is to ensure clients can not find out whether we store arbitrary images
-/// by simply requesting their hash.
-/// It is just a 256 byte array wrapped in an Arc for thread safety.
-/// # Important
-/// The [ImageHashIv] is derived from the env var `MINIO_IMG_HASH_IV`, and must
-/// be the same on all servers (that is, if more than one is deployed behind a
-/// load balancer)
-/// # TODO:
-/// Evaluate whether we want to use the DB to store this state, or keep it as
-/// an env var
-pub type ImageHashIv = Arc<[u8; 256]>;
+use crate::minio::ImageHashIv;
 
+/// A collection of configuration values which should be present in the
+/// environment when the server starts.
 #[derive(Debug)]
 pub struct Config {
     pub db_url: String,
