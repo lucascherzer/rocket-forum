@@ -18,7 +18,7 @@ cp .env.example .env
 If you intend to run the app in release mode, `ROCKET_SECRET_KEY` must be set.
 This file does not need to be sourced, it's presence suffices.
 
-### Start the database
+### Start the database and object storage
 ```sh
 docker compose up
 ```
@@ -44,3 +44,11 @@ This means that the server can easily be scaled using a load balancer.
 > We want to have rate-limiting while the server can remain stateless.
 > It is not yet implemented but being worked on. We aim to use redis as a
 > ephemeral storage.
+
+## Database
+
+We use SurrealDB with the following schema:
+![](assets/db-schema.png)
+
+The database automatically initialised (if not already) once when the server
+starts.
