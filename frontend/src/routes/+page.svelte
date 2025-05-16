@@ -3,16 +3,33 @@
     import { goto } from '$app/navigation';
     import { checkAuthStatus, logout } from '$lib/stores/auth';
     import { onMount } from 'svelte';
+    import { fetchLatestPosts } from '$lib/stores/posts'; 
+    import { posts } from '$lib/stores/posts';
+    import { getHashtagColor, getTextColor } from '$lib/utils/tagColors';
     import '../style/mainpage.css';
 
     let isLoading = true;
     let showOverlay = false;
     let isAuthenticated = false;
+    let postsLoading = true;
 
     onMount(async () => {
-        isLoading = true;
-        isAuthenticated = await checkAuthStatus();
-        isLoading = false;
+        try {
+            isLoading = true;
+            // Check authentication status
+            isAuthenticated = await checkAuthStatus();
+            
+            if (isAuthenticated) {
+                // Only load posts if user is authenticated
+                postsLoading = true;
+                await fetchLatestPosts();
+            }
+        } catch (error) {
+            console.error("Error loading page:", error);
+        } finally {
+            isLoading = false;
+            postsLoading = false;
+        }
     });
 
     function navigateToLogin() {
@@ -56,11 +73,44 @@
 {#if isLoading}
     <div class="loading-indicator">Lade...</div>
 {:else}
-    <div class="welcome-container">
-        <div class="welcome-text">
-            <p>Deine neue Community-Plattform für Diskussionen und Austausch.</p>
-            <p>Melde dich an, um an Gesprächen teilzunehmen oder eigene Themen zu erstellen.</p>
+    {#if !isAuthenticated}
+        <div class="welcome-container">
+            <div class="welcome-text">
+                <p>Deine neue Community-Plattform für Diskussionen und Austausch.</p>
+                <p>Melde dich an, um an Gesprächen teilzunehmen oder eigene Themen zu erstellen.</p>
+            </div>
         </div>
-    </div>
+    {:else}
+        <div class="main-container">
+            <h1>Willkommen im Forum</h1>
+            
+            {#if postsLoading}
+                <div class="loading-indicator">Lade Posts...</div>
+            {:else if $posts.length === 0}
+                <p>Keine Posts gefunden. Sei der Erste, der einen Post erstellt!</p>
+            {:else}
+                <div class="posts-container">
+                    {#each $posts as post (post.id)}
+                        <div class="post-card">
+                            <h2>{post.heading}</h2>
+                            <p>{post.text}</p>
+                            <div class="post-footer">
+                                <div class="post-date">{new Date(post.created_at).toLocaleString()}</div>
+                                <div class="post-hashtags">
+                                    {#each post.hashtags as tag}
+                                        {@const bgColor = getHashtagColor(tag)}
+                                        {@const textColor = getTextColor(bgColor)}
+                                        <span class="hashtag" style="background-color: {bgColor}; color: {textColor}">
+                                            {tag}
+                                        </span>
+                                    {/each}
+                                </div>
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+            {/if}
+        </div>
+    {/if}
 {/if}
 
