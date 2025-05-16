@@ -17,6 +17,9 @@ pub enum PostError {
     #[response(status = 500)]
     /// Occurs when the DB gives an unrecoverable error
     DatabaseError(&'static str),
+    #[response(status = 403)]
+    /// General 403
+    InvalidInput(&'static str),
 }
 
 /// This contains the logic for creating posts and commenting on them
@@ -135,8 +138,13 @@ pub async fn route_create_comment(
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreateComment>,
-) -> Option<Json<CommentId>> {
+) -> Result<Json<CommentId>, PostError> {
     let data = data.into_inner();
+    if data.post.starts_with("Posts:") {
+        return Err(PostError::InvalidInput(
+            "The post id should omit the `Posts:` prefix",
+        ));
+    }
     dbg_print!("Creating new comment");
     let hashtags: Vec<String> = extract_hashtags(data.text.clone()).into_iter().collect();
 
@@ -148,12 +156,23 @@ pub async fn route_create_comment(
         .bind(("hashtags", hashtags))
         .await;
     dbg_print!(&res);
-    let mut res = res.ok()?;
+    let mut res = res.map_err(|_e| {
+        dbg_print!("{}", _e);
+        PostError::DatabaseError("An error with the database occured")
+    })?;
 
-    let new_comment = res.take::<Vec<RecordId>>(2).ok()?.into_iter().next()?; // Safe access
+    let new_comment = res
+        .take::<Vec<RecordId>>(2)
+        .map_err(|_e| {
+            dbg_print!("{}", _e);
+            PostError::DatabaseError("Problem deserialising result")
+        })?
+        .into_iter()
+        .next()
+        .ok_or(PostError::DatabaseError("Problem deserialising result"))?;
     dbg_print!(&new_comment);
 
-    Some(Json(CommentId {
+    Ok(Json(CommentId {
         id: new_comment.to_string(),
     }))
 }
