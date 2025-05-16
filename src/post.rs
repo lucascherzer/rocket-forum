@@ -201,7 +201,7 @@ pub struct ViewPost {
 }
 
 /// The possible errors returned by [route_get_latest_posts] and [route_get_post]
-#[derive(Responder, Debug)]
+#[derive(Responder, Debug, Clone)]
 pub enum GetPostsError {
     #[response(status = 400)]
     InvalidInput(&'static str),
@@ -238,6 +238,50 @@ pub async fn route_get_post(
         dbg_print!("{}", &res);
         Err(GetPostsError::NotFound(
             "No post with that id could be found",
+        ))
+    }
+}
+/// The object returned whenever a user wants to view a comment
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(crate = "rocket::serde")]
+pub struct ViewComment {
+    created_at: Datetime,
+    hashtags: Vec<String>,
+    author: String,
+    post: String,
+    likes: usize,
+    dislikes: usize,
+    id: String,
+    text: String,
+}
+/// Get a comment by id.
+/// Takes the comments id (specifically the part after the colon), and returns all
+/// fields except `deleted`. See [ViewComment]
+#[rocket::get("/comment/<comment_id>")]
+pub async fn route_get_comment(
+    db: &State<Surreal<Any>>,
+    comment_id: String,
+) -> Result<Json<ViewComment>, GetPostsError> {
+    if comment_id.starts_with("commented:") {
+        return Err(GetPostsError::InvalidInput(
+            "The comment id should not start with `commented:`. Only send the part after the colon.",
+        ));
+    }
+    let mut query = db
+        .query(include_str!("queries/get_comment.surql"))
+        .bind(("comment_id", comment_id))
+        .await
+        .unwrap();
+    let res = query.take::<Vec<ViewComment>>(0).map_err(|_e| {
+        dbg_print!(_e);
+        GetPostsError::DatabaseError("")
+    })?;
+    if let Some(comment) = res.get(0) {
+        Ok(Json(comment.clone()))
+    } else {
+        dbg_print!("{}", &res);
+        Err(GetPostsError::NotFound(
+            "No comment with that id could be found",
         ))
     }
 }
