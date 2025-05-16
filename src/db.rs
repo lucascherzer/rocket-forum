@@ -1,5 +1,5 @@
 use rocket::fairing::{Fairing, Kind};
-use rocket::{Orbit, Request, Rocket};
+use rocket::{Orbit, Rocket};
 use surrealdb::Surreal;
 use surrealdb::engine::any::{self, Any};
 use surrealdb::opt::auth::Root;

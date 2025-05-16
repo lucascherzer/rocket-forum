@@ -1,12 +1,7 @@
 use std::collections::HashSet;
 
 use lazy_regex::regex;
-use rocket::{
-    Responder, State,
-    http::Status,
-    response::{self, content},
-    serde::json::Json,
-};
+use rocket::{Responder, State, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId, Surreal, engine::any::Any};
 
@@ -111,6 +106,13 @@ pub async fn route_create_post(
     }))
 }
 
+/// Retrieves all hashtags from a given text.
+/// # Example
+/// ```rs
+/// let text: String = "This is an #example".into();
+/// let mut tags: HashSet<String> = HashSet::new().insert("#example");
+/// assert_eq!(tags, extract_hashtags(text));
+/// ```
 pub fn extract_hashtags(text: String) -> HashSet<String> {
     let mut hashtags: HashSet<String> = HashSet::new();
     regex!(r"(^|\s)#\w+")
