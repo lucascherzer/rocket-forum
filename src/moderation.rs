@@ -1,3 +1,4 @@
+//! Contains logic for moderation features such as deleting posts/comments.
 use rocket::{State, response::content, serde, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use surrealdb::{Surreal, engine::any::Any};

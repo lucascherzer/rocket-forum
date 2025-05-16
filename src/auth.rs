@@ -1,3 +1,4 @@
+//! This module contains the logic for authentication and authorisation.
 use std::str::FromStr;
 
 use rocket::{

@@ -1,3 +1,5 @@
+//! Common utilities.
+
 #[macro_export]
 /// A debug print that calls dbg_print! but only does so on the debug profile.
 ///

@@ -1,3 +1,7 @@
+//! Contains logic related to posts and comments.
+//!
+//! Handles things like post/comment creation (see [route_create_post] and
+//! [route_create_comment])
 use std::collections::HashSet;
 
 use lazy_regex::regex;

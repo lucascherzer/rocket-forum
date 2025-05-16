@@ -1,3 +1,4 @@
+//! This module covers common redirects.
 use rocket::{http::CookieJar, response::Redirect};
 
 #[rocket::get("/")]
