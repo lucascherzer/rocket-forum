@@ -1,4 +1,9 @@
-/// This module contains logic for initialising the database at startup.
+//! This module contains logic for initialising the database at startup.
+//!
+//! We use a SurrealDB instance (theoretically available as a cloud instance as
+//! well as a local test instance via docker compose. Just set the according
+//! values in .env) as our database of choice, as it provides a flexible way
+//! to structure data and has a good rust sdk.
 use rocket::fairing::{Fairing, Kind};
 use rocket::{Orbit, Rocket};
 use surrealdb::Surreal;
