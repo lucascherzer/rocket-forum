@@ -1,4 +1,5 @@
 //! This module contains all logic related to file uploads.
+//!
 //! Because the web server is intended to be stateless, we can not store images
 //! directly on the server and need to outsource all images to an outside
 //! storage. For this, we use minio. Our minio instance is locally hosted, part
@@ -9,8 +10,8 @@
 //! creation process, and garbage collected if they remain unused in posts,
 //! and another for images that are used in posts. Durig post creation, any
 //! images are first uploaded to the temporary bucket via [route_image_upload]
-//! and if the post is published via [route_create_post], the image is moved to
-//! the persistent storage.
+//! and if the post is published via [crate::post::route_create_post], the image
+//! is moved to the persistent storage.
 use std::collections::HashMap;
 
 use minio_rsc::Minio;
@@ -36,7 +37,7 @@ pub static IMG_BUCKET_NAME: &str = "rf-images";
 pub static TMP_IMG_BUCKET_NAME: &str = "rf-images-tmp";
 
 /// This is called once when initialising the minio instance.
-/// It sets the default retention of the bucket [TMP_IMAGE_BUCKET_NAME] to 1 day
+/// It sets the default retention of the bucket [TMP_IMG_BUCKET_NAME] to 1 day
 async fn set_default_retention(minio: &Minio) -> Result<(), ()> {
     let tmp_object_lock_config = ObjectLockConfig::new(1, true, true);
     minio
