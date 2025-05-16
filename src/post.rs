@@ -212,6 +212,7 @@ pub async fn route_like(
 #[serde(crate = "rocket::serde")]
 pub struct ViewPost {
     id: String,
+    author: String,
     heading: String,
     images: Vec<String>,
     text: String,
@@ -264,9 +265,9 @@ pub async fn route_get_post(
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(crate = "rocket::serde")]
 pub struct ViewComment {
+    author: String,
     created_at: Datetime,
     hashtags: Vec<String>,
-    author: String,
     post: String,
     likes: usize,
     dislikes: usize,

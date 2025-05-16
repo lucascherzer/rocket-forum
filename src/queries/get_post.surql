@@ -4,5 +4,6 @@ SELECT
     hashtags,
     text,
     heading,
-    images
+    images,
+    <string> record::id((<-created<-Users.id)[0]) AS author
 FROM Posts WHERE deleted = false AND id = type::thing("Posts", $post_id);

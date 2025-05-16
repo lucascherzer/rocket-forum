@@ -4,7 +4,9 @@ SELECT
     images,
     heading,
     text,
-    hashtags
+    hashtags,
+    <string> record::id((<-created<-Users.id)[0]) AS author
+
 FROM Posts
 WHERE deleted = false AND created_at > type::datetime($time_offset)
 ORDER BY created_at DESC;
