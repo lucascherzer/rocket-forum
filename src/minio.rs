@@ -1,3 +1,16 @@
+//! This module contains all logic related to file uploads.
+//! Because the web server is intended to be stateless, we can not store images
+//! directly on the server and need to outsource all images to an outside
+//! storage. For this, we use minio. Our minio instance is locally hosted, part
+//! of the docker compose deployment.
+//! Minio is an S3-like storage, organising it's objects in buckets, which we
+//! have two of:
+//! One for temporarily storing images which are uploaded as part of the post
+//! creation process, and garbage collected if they remain unused in posts,
+//! and another for images that are used in posts. Durig post creation, any
+//! images are first uploaded to the temporary bucket via [route_image_upload]
+//! and if the post is published via [route_create_post], the image is moved to
+//! the persistent storage.
 use std::collections::HashMap;
 
 use minio_rsc::Minio;
@@ -41,6 +54,8 @@ pub fn generate_key_args(img_name: &String, owner: String, img_type: &SupportedI
     KeyArgs::new(img_name).metadata(metadata)
 }
 
+/// Logs into the minio instance based on the provided credentials, Returning
+/// the Minio client if successful.
 pub async fn get_minio(
     minio_endpoint: &str,
     minio_access_key: &str,
