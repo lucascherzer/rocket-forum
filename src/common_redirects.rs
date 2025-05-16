@@ -1,4 +1,4 @@
-use rocket::{Request, http::CookieJar, response::Redirect};
+use rocket::{http::CookieJar, response::Redirect};
 
 #[rocket::get("/")]
 pub fn route_frontend_index() -> Redirect {
@@ -6,7 +6,6 @@ pub fn route_frontend_index() -> Redirect {
 }
 
 #[rocket::get("/login")]
-
 pub fn route_frontend_login(cookies: &CookieJar<'_>) -> Redirect {
     if cookies.get("session_id").is_some() {
         return Redirect::to("/");

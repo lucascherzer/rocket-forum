@@ -1,0 +1,8 @@
+SELECT
+    created_at,
+    string::join(":", record::tb(id), record::id(id)) AS id,
+    hashtags,
+    text,
+    heading,
+    images
+FROM Posts WHERE deleted = false AND id = type::thing("Posts", $post_id);

@@ -1,6 +1,7 @@
 SELECT
     created_at,
     string::join(":", record::tb(id), record::id(id)) AS id,
+    images,
     heading,
     text,
     hashtags

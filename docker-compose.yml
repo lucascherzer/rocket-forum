@@ -1,0 +1,14 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2.2.2
+    env_file:
+      - .env
+    entrypoint:
+      - /surreal
+      - start
+      - --user
+      - $SURREALDB_USER
+      - --pass
+      - $SURREALDB_PASS
+    ports:
+      - 8080:8000

@@ -12,13 +12,31 @@
 The Webeng.json file can be imported into hoppscotch (and Postman?)
 and contains the API endpoints with examples for the project.
 
-## Notes
-
-### env
-To run this application, you need to set up a valid `.env` file.
-`.env.example` should show which options need to be set. Ask for the correct
-values if you are not sure.
+## Running
+To run the app
+### Set up the environment
+Fill out the env values. See .env.example for the required values (you can make
+up a `SURREALDB_USER` and `SURREALDB_PASS`).
+```sh
+cp .env.example .env
+```
+If you intend to run the app in release mode, `ROCKET_SECRET_KEY` must be set.
 This file does not need to be sourced, it's presence suffices.
+
+### Start the database
+```sh
+docker compose up
+```
+### Start the server:
+```sh
+cargo run # for debug builds
+cargo run --release # for optimized builds
+```
+## Docs
+The documentation can be automatically generated:
+```sh
+cargo doc --no-deps
+```
 
 ### State
 
