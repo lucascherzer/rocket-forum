@@ -1,4 +1,4 @@
-///! This module covers server configuration at startup.
+//! This module covers server configuration at startup.
 use std::sync::Arc;
 
 /// This is important for how we store images.
