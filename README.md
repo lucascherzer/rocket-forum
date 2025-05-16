@@ -1,8 +1,5 @@
 # Web Engineering Project
 
-## How to run
-'''cargo run'''
-
 ## Tech Stack
 - backend: Rust + Rocket
 - frontend: Svelte
