@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use rocket::{
     Responder, State,
@@ -386,9 +386,14 @@ pub async fn route_logout(
 }
 
 #[rocket::get("/check")]
-
-pub async fn route_check(_user: UserSession) -> &'static str {
-    "You are authenticated"
+pub async fn route_check(user: Option<UserSession>) -> Json<HashMap<String, UserRole>> {
+    let mut hm = HashMap::new();
+    if let Some(user) = user {
+        hm.insert("role".into(), user.role);
+    } else {
+        hm.insert("role".into(), UserRole::User);
+    }
+    Json(hm)
 }
 
 #[cfg(test)]
