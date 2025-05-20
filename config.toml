@@ -1,2 +1,2 @@
 [env]
-CC = "gcc-14"
+CFLAGS = '-std=gnu17'
