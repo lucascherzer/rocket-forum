@@ -17,3 +17,4 @@ rocket_cors = "0.6.0"
 lazy-regex = "3.4.1"
 fastembed = "4.8.0"
 rocket_dyn_templates = { version = "0.2.0", features = ["handlebars"] }
+tokenizers = { version = "0.21.1", features = ["unstable_wasm"] }
