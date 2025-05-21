@@ -43,6 +43,9 @@ pub struct CreatePost {
 
     /// The list of images attached to the post. Can be omitted if it is a text
     /// only post.
+    /// The images are supposed to be the id's returned by the
+    /// [crate::minio::route_image_upload] endpoint. This means to create a post, you have to
+    /// first upload all images via that route.
     images: Option<Vec<String>>,
     // ^ usually Option<Vec<T>>s are bad, as you could just use a vec of length
     // 0, but if the client omits the images entirely, this route would not
@@ -91,13 +94,7 @@ pub struct LikePostOrComment {
 }
 
 /// [route_create_post] is the API route that is used to create posts (shocking,
-/// I know). It receives a JSON object in the body:
-/// ```json
-/// {
-///     "heading": "This is the posts heading",
-///     "text": "This is the posts text"
-/// }
-/// ```
+/// I know). It receives a JSON object in the body defined by [CreatePost]
 #[rocket::post("/new", data = "<data>")]
 pub async fn route_create_post(
     user: UserSession,
