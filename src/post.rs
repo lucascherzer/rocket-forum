@@ -90,6 +90,8 @@ pub struct CommentId {
 #[derive(Debug, Deserialize, Clone, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct LikePostOrComment {
+    /// This is the id of the post/comment. Example value:
+    /// `Posts:abcdefg`/`commented:hijklmno`
     subject: String,
 }
 
@@ -191,6 +193,8 @@ pub async fn route_create_comment(
     }))
 }
 
+/// Likes a post or comment.
+/// The body is a [LikePostOrComment]
 #[rocket::post("/like", data = "<data>")]
 pub async fn route_like(
     user: UserSession,
