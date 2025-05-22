@@ -49,3 +49,10 @@ balancer.
 > [!warning] DDoS Protection
 > We want to have rate-limiting while the server can remain stateless.
 > It is not yet implemented but being worked on.
+
+# Troubleshooting
+
+> [!warning]- Login does not work
+> Make sure you use 127.0.0.1:PORT in the address bar. If you use localhost,
+> it will resolve to 127.0.0.1 and the `SameSite` attribute on the `session_id`
+> cookie can not be set
