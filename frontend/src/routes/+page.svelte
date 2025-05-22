@@ -71,7 +71,7 @@
 </header>
 
 {#if isLoading}
-    <div class="loading-indicator">Lade...</div>
+    <span class="loader"></span>
 {:else}
     {#if !isAuthenticated}
         <div class="welcome-container">
@@ -85,7 +85,7 @@
             <h1>Willkommen im Forum</h1>
             
             {#if postsLoading}
-                <div class="loading-indicator">Lade Posts...</div>
+                <span class="loader"></span>
             {:else if $posts.length === 0}
                 <p>Keine Posts gefunden. Sei der Erste, der einen Post erstellt!</p>
             {:else}

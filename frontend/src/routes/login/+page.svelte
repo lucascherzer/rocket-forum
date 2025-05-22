@@ -44,7 +44,7 @@
 
 <div class="login-page-wrapper">
 	{#if !authChecked}
-		<div>Loading...</div>
+		<span class="loader"></span>
 	{:else if isLoggedIn}
 		<div class="already-logged-in-box">
 			<p>You are already logged in.</p>
