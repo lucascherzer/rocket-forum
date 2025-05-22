@@ -28,6 +28,7 @@ docker compose up
 ```sh
 cargo run # for debug builds
 cargo run --release # for optimized builds
+cargo run -F fingerprinting # to include the fingerprinting mechanism
 ```
 ## Docs
 The documentation can be automatically generated:
