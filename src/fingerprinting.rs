@@ -1,5 +1,7 @@
 //! This module includes fingerprinting functionality, meaning it enables us to
 //! distinguish clients based on a few parameters.
+//! This is not included by default - to use it, enable the `fingerprinting`
+//! feature.
 //!  At the moment, these parameters are
 //! - user_agent
 //! - client_ip
@@ -16,6 +18,7 @@
 //! useless when factoring in its cost, piece of code that could be implemented
 //! in a simpler fashion. But it could be sped up significantly by using a
 //! custom made vectorisation primitive
+
 use std::{iter::zip, net::IpAddr};
 
 use crate::dbg_print;
