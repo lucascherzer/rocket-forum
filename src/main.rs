@@ -51,6 +51,7 @@ async fn rocket() -> _ {
     let db = init().await.expect("Failed to connect to database");
     let cors_conf = get_cors_config().unwrap();
     let db_initialiser = DbInitialiser;
+    #[allow(unused_mut)] // this mut is only used on the fingerprinting feature
     let mut app = rocket::build()
         .manage(db)
         .attach(db_initialiser)
