@@ -7,6 +7,9 @@ use surrealdb::{Datetime, RecordId, Surreal, engine::any::Any};
 
 use crate::{auth::UserSession, dbg_print};
 
+static POST_HEADING_MAX_LENGTH: usize = 1000;
+static POST_TEXT_MAX_LENGTH: usize = 10000;
+
 #[non_exhaustive]
 #[derive(Responder, Debug)]
 pub enum PostError {
@@ -87,9 +90,17 @@ pub async fn route_create_post(
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreatePost>,
-) -> Option<Json<PostId>> {
-    // TODO: limit the length of heading and text
+) -> Result<Json<PostId>, PostError> {
     let data = data.into_inner();
+    if *&data.heading.is_empty()
+        || &data.heading.len() > &POST_HEADING_MAX_LENGTH
+        || *&data.text.is_empty()
+        || &data.text.len() > &POST_TEXT_MAX_LENGTH
+    {
+        return Err(PostError::InvalidInput(
+            "The posts text and body may not be empty and must not exceed the max length (1000 and 10000 characters)",
+        ));
+    }
     let full_text = format!("{}{}", data.heading, data.text);
     let hashtags: Vec<String> = extract_hashtags(full_text).into_iter().collect();
 
@@ -100,11 +111,22 @@ pub async fn route_create_post(
         .bind(("user", user.user_id))
         .bind(("hashtags", hashtags))
         .await
-        .ok()?; // Early return on error
+        .map_err(|_e| {
+            dbg_print!(_e);
+            PostError::DatabaseError("")
+        })?; // Early return on error
 
-    let new_post = res.take::<Vec<NewPostResult>>(1).ok()?.into_iter().next()?; // Safe access to first result
+    let new_post = res
+        .take::<Vec<NewPostResult>>(1)
+        .map_err(|_e| {
+            dbg_print!(_e);
+            PostError::DatabaseError("")
+        })?
+        .into_iter()
+        .next()
+        .ok_or(PostError::DatabaseError(""))?;
 
-    Some(Json(PostId {
+    Ok(Json(PostId {
         id: new_post.out.to_string(),
     }))
 }
