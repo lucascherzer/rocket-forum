@@ -4,7 +4,11 @@ import { apiRequest } from '$lib/api';
 
 export const currentUser = writable(null);
 
-// Initialize auth status on load
+/**
+ * Checks the current authentication status by making a request to the backend.
+ * Updates the currentUser store if the user is not authenticated.
+ * @returns A promise that resolves to true if the user is authenticated, false otherwise.
+ */
 export async function checkAuthStatus(): Promise<boolean> {
     try {
         await apiRequest('/api/auth/check');	
@@ -16,6 +20,12 @@ export async function checkAuthStatus(): Promise<boolean> {
     }
 }
 
+/**
+ * Attempts to log in a user with the provided username and password.
+ * @param username - The user's username.
+ * @param password - The user's password.
+ * @returns A promise that resolves to true if login is successful, false otherwise.
+ */
 export async function login(username: string, password: string) {
     try {
         await apiRequest('/api/auth/login', {
@@ -30,6 +40,12 @@ export async function login(username: string, password: string) {
     }
 }
 
+/**
+ * Attempts to sign up a new user with the provided username and password.
+ * @param username - The desired username for the new account.
+ * @param password - The desired password for the new account.
+ * @returns A promise that resolves to true if signup is successful, false otherwise.
+ */
 export async function signup(username: string, password: string) {
     try {
         await apiRequest('/api/auth/signup', {
@@ -43,6 +59,11 @@ export async function signup(username: string, password: string) {
     }
 }
 
+/**
+ * Logs out the current user.
+ * Updates the currentUser store to null on successful logout.
+ * @returns A promise that resolves to true if logout is successful, false otherwise.
+ */
 export async function logout() {
     try {
         await apiRequest('/api/auth/logout');
