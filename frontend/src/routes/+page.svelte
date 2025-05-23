@@ -49,6 +49,10 @@
     function closeOverlay() {
         showOverlay = false;
     }
+
+    function navigateToCreatePost() {
+        goto('/new');
+    }
 </script>
 
 <header class="sticky-header">
@@ -82,7 +86,10 @@
         </div>
     {:else}
         <div class="main-container">
-            <h1>Willkommen im Forum</h1>
+            <div class="forum-header-container">
+                <h1>Willkommen im Forum</h1>
+                <button class="create-post-button" on:click={navigateToCreatePost}>Create Post</button>
+            </div>
             
             {#if postsLoading}
                 <span class="loader"></span>
@@ -113,4 +120,5 @@
         </div>
     {/if}
 {/if}
+
 
