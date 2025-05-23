@@ -1,9 +1,8 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { createPost } from '$lib/stores/posts';
-    import '../../style/mainpage.css'; // Wiederverwendung von Styles von der Hauptseite
     import { onMount } from 'svelte';
-    import { checkAuthStatus, logout } from '$lib/stores/auth'; // logout importiert
+    import { checkAuthStatus, logout } from '$lib/stores/auth'; 
     import '../../style/new.css';
 
     let heading = '';
@@ -33,7 +32,7 @@
 
         try {
             await createPost(heading, text);
-            goto('/'); // Zurück zur Hauptseite nach erfolgreichem Erstellen
+            goto('/index.html'); // Zurück zur Hauptseite nach erfolgreichem Erstellen
         } catch (e) {
             error = e instanceof Error ? e.message : 'Ein Fehler ist beim Erstellen des Posts aufgetreten.';
             console.error('Fehler beim Erstellen des Posts:', e);
@@ -64,7 +63,7 @@
 
 <header class="sticky-header">
     <div class="header-content">
-        <a href="/" class="header-title">Rocket-Forum</a>
+        <a href="/index.html" class="header-title">Rocket-Forum</a>
         <div class="header-right">
             {#if !isCheckingAuth}
                 <button class="login-success user-icon" aria-label="User menu" on:click={toggleOverlay}>&#128100;</button>
@@ -82,27 +81,27 @@
 {#if isCheckingAuth}
     <div class="loading-indicator">Authentifizierung wird überprüft...</div>
 {:else}
-    <div class="main-container">
-        <h1>Neuen Post erstellen</h1>
-
-        <form on:submit|preventDefault={handleSubmit} class="new-post-form">
-            {#if error}
-                <div class="error-message">{error}</div>
-            {/if}
-
-            <div class="form-group">
-                <label for="heading">Titel</label>
-                <input type="text" id="heading" bind:value={heading} required disabled={isLoading} />
-            </div>
-
-            <div class="form-group">
-                <label for="text">Text</label>
-                <textarea id="text" bind:value={text} rows="10" required disabled={isLoading}></textarea>
-            </div>
-
-            <button type="submit" class="button primary" disabled={isLoading}>
-                {isLoading ? 'Wird erstellt...' : 'Post erstellen'}
-            </button>
-        </form>
+    <div class="new-page-wrapper">
+        <div class="create-post-container">
+            <h1>Neuen Post erstellen</h1>
+            <form on:submit|preventDefault={handleSubmit} class="new-post-form">
+                {#if error}
+                    <div class="error-message">{error}</div>
+                {/if}
+                <div class="form-group">
+                    <label for="heading">Titel</label>
+                    <input type="text" id="heading" bind:value={heading} required disabled={isLoading} />
+                </div>
+                <div class="form-group">
+                    <label for="text">Text</label>
+                    <textarea id="text" bind:value={text} rows="10" required disabled={isLoading}></textarea>
+                </div>
+                <div class="button-row">
+                    <button type="submit" class="button primary" disabled={isLoading}>
+                        {isLoading ? 'Wird erstellt...' : 'Post erstellen'}
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 {/if}

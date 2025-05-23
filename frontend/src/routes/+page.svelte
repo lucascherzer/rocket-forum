@@ -51,7 +51,7 @@
     }
 
     function navigateToCreatePost() {
-        goto('/new');
+        goto('/new.html');
     }
 </script>
 
