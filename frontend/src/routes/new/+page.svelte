@@ -4,6 +4,7 @@
     import { onMount } from 'svelte';
     import { checkAuthStatus, logout } from '$lib/stores/auth'; 
     import '../../style/new.css';
+    import '../../style/mainpage.css'; //to fix: overlay css should sit in app.css, however this is easyer right now 
 
     let heading = '';
     let text = '';
