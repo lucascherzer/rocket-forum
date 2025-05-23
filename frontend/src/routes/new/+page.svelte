@@ -3,14 +3,15 @@
     import { createPost } from '$lib/stores/posts';
     import '../../style/mainpage.css'; // Wiederverwendung von Styles von der Hauptseite
     import { onMount } from 'svelte';
-    import { checkAuthStatus } from '$lib/stores/auth';
-    import "../style/new.css";
+    import { checkAuthStatus, logout } from '$lib/stores/auth'; // logout importiert
+    import '../../style/new.css';
 
     let heading = '';
     let text = '';
     let isLoading = false;
     let error = '';
     let isCheckingAuth = true;
+    let showOverlay = false; // Hinzugefügt für das User-Overlay
 
     onMount(async () => {
         const isAuthenticated = await checkAuthStatus();
@@ -40,11 +41,43 @@
             isLoading = false;
         }
     }
+
+    // Funktionen für das User-Overlay
+    function handleLogout() {
+        logout();
+        showOverlay = false;
+        goto('/'); // Nach Logout zum Login weiterleiten
+    }
+
+    function toggleOverlay() {
+        showOverlay = !showOverlay;
+    }
+
+    function closeOverlay() {
+        showOverlay = false;
+    }
 </script>
 
 <svelte:head>
     <title>Neuen Post erstellen - Rocket-Forum</title>
 </svelte:head>
+
+<header class="sticky-header">
+    <div class="header-content">
+        <a href="/" class="header-title">Rocket-Forum</a>
+        <div class="header-right">
+            {#if !isCheckingAuth}
+                <button class="login-success user-icon" aria-label="User menu" on:click={toggleOverlay}>&#128100;</button>
+                {#if showOverlay}
+                    <div class="user-overlay" role="dialog" aria-label="User menu" tabindex="0" on:click|stopPropagation on:keydown={(e) => e.key === 'Escape' && closeOverlay()}>
+                        <button class="logout-button" on:click={handleLogout}>Logout</button>
+                    </div>
+                    <button class="overlay-backdrop" aria-label="Close overlay" on:click={closeOverlay} on:keydown={(e) => e.key === 'Enter' && closeOverlay()}></button>
+                {/if}
+            {/if}
+        </div>
+    </div>
+</header>
 
 {#if isCheckingAuth}
     <div class="loading-indicator">Authentifizierung wird überprüft...</div>
