@@ -38,7 +38,7 @@ use surrealdb::{RecordId, Surreal, engine::any::Any};
 
 /// The maximum manhattan distance two points in vector space may be apart to
 /// still be considered the same
-pub static VECTOR_DISTANCE_THRESHOLD: f32 = 0.01;
+pub static VECTOR_DISTANCE_THRESHOLD: f32 = 10.0;
 
 /// A rocket middleware that takes parameters from the request like the
 /// session_id cookie, the user agent, the remote ip and computes an embedding.
