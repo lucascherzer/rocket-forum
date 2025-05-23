@@ -5,4 +5,9 @@
     --accent-color: #e94e77;
     --background-color: #f9f9f9;
     --text-color: #222;
-  }
+    --success-color: #4caf50;
+    --error-color: #e53935;
+    --warning-color: #fbc02d;
+    --info-color: #2196f3;
+    --disabled-color: #cccccc;
+}

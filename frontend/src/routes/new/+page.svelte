@@ -80,7 +80,7 @@
 </header>
 
 {#if isCheckingAuth}
-    <div class="loading-indicator">Authentifizierung wird überprüft...</div>
+    <span class="loader"></span>
 {:else}
     <div class="new-page-wrapper">
         <div class="create-post-container">
