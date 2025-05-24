@@ -329,21 +329,26 @@ pub async fn route_get_comment(
     }
 }
 
-/// This route can be used to retrieve the latest posts.
+/// This route can be used to retrieve the latest posts (twenty at a time).
 /// When called using the GET param `time_offset`, you can cut off posts
-/// at a certain date
+/// at a certain date.
+/// The `page` parameter allows for pagination and is zero indexed.
 /// # Example
 /// ```sh
-/// curl http://localhost:8000/api/post/latest?time_offset=1970-01-01
+/// curl http://localhost:8000/api/post/latest?time_offset=1970-01-01?page=0
+/// # The parameters above are actually the default params, so this is equivalent:
+/// curl http://localhost:8000/api/post/latest
 /// ```
-#[rocket::get("/latest?<time_offset>")]
+#[rocket::get("/latest?<time_offset>&<page>")]
 pub async fn route_get_latest_posts(
     db: &State<Surreal<Any>>,
     time_offset: Option<String>,
+    page: Option<usize>,
 ) -> Result<Json<Vec<ViewPost>>, GetPostsError> {
     let mut query = db
         .query(include_str!("queries/get_latest_posts.surql"))
         .bind(("time_offset", time_offset.unwrap_or("1970-01-01".into())))
+        .bind(("page", page.unwrap_or(0)))
         .await
         .unwrap();
     query
