@@ -12,6 +12,8 @@ use surrealdb::{RecordId, Surreal, Uuid, engine::any::Any};
 
 use crate::dbg_print;
 
+pub static USERNAME_MAX_LENGTH: usize = 20;
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
 pub struct CreateUser {
@@ -236,10 +238,11 @@ pub async fn route_signup(
     create_user: Json<CreateUser>,
     session: Option<UserSession>,
 ) -> Result<(), AuthError> {
-    // TODO: redirect when already logged in
-    // TODO: redirect after user creation
     let expected: Vec<CountWrapper> = vec![];
     let create_user = create_user.into_inner();
+    if &create_user.username.len() >= &USERNAME_MAX_LENGTH {
+        return Err(AuthError::InvalidInput("The username is too long"));
+    }
     let create_role: UserRole;
     if let Ok(db_result) = db
         .query("SELECT count(username) FROM Users WHERE username = $username")

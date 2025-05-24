@@ -93,9 +93,7 @@
 </header>
 
 {#if isLoading}
-	<div class="loader-center">
-		<span class="loader"></span>
-	</div>
+	<span class="loader"></span>
 {:else if !isAuthenticated}
 	<div class="welcome-container">
 		<div class="welcome-text">
@@ -111,9 +109,7 @@
 		</div>
 
 		{#if postsLoading}
-			<div class="loader-center">
-				<span class="loader"></span>
-			</div>
+			<span class="loader"></span>
 		{:else if $posts.length === 0}
 			<p>Keine Posts gefunden. Sei der Erste, der einen Post erstellt!</p>
 		{:else}
@@ -123,7 +119,9 @@
 						<h2>{post.heading}</h2>
 						<p>{post.text}</p>
 						<div class="post-footer">
-							<div class="post-date">{new Date(post.created_at).toLocaleString()}</div>
+							<div class="post-date">
+								{post.author} :: {new Date(post.created_at).toLocaleString()}
+							</div>
 							<div class="post-hashtags">
 								{#each post.hashtags as tag}
 									{@const bgColor = getHashtagColor(tag)}
