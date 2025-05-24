@@ -5,7 +5,7 @@ SELECT
     heading,
     text,
     hashtags,
-    <string> record::id((<-created<-Users.id)[0]) AS author,
+    (<-created<-Users.username)[0] AS author,
     <-commented.id.map(|$c| <string> record::id($c)) AS comments
 
 
