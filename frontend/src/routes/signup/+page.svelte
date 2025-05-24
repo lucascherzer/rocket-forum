@@ -36,6 +36,10 @@
 	}
 </script>
 
+<svelte:head>
+    <title>Neuen Account erstellen</title>
+</svelte:head>
+
 <div class="login-page-wrapper">
 	<div class="login-container">
 		<h1 class="login-title">Registrieren</h1>

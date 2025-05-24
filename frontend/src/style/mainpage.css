@@ -1,3 +1,5 @@
+@import './colors.css';
+
 body {
     background-image: none;
     background-color: white;
@@ -183,3 +185,16 @@ p {
     .create-post-button:hover {
         background-color: #45a049; /* Darker green */
     }
+
+.loader-center {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: white; /* Optional: Hintergrundfarbe während des Ladens */
+    z-index: 1000;
+}

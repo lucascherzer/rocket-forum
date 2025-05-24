@@ -42,6 +42,10 @@
 	}
 </script>
 
+<svelte:head>
+    <title>Login</title>
+</svelte:head>
+
 <div class="login-page-wrapper">
 	{#if !authChecked}
 		<span class="loader"></span>

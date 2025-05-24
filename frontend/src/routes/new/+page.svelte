@@ -59,7 +59,7 @@
 </script>
 
 <svelte:head>
-    <title>Neuen Post erstellen - Rocket-Forum</title>
+    <title>Neuen Post erstellen</title>
 </svelte:head>
 
 <header class="sticky-header">
@@ -91,11 +91,11 @@
                 {/if}
                 <div class="form-group">
                     <label for="heading">Titel</label>
-                    <input type="text" id="heading" bind:value={heading} required disabled={isLoading} />
+                    <input type="text" id="heading" maxlength="1000" bind:value={heading} required disabled={isLoading} />
                 </div>
                 <div class="form-group">
                     <label for="text">Text</label>
-                    <textarea id="text" bind:value={text} rows="10" required disabled={isLoading}></textarea>
+                    <textarea id="text" maxlength="10000" bind:value={text} rows="10" required disabled={isLoading}></textarea>
                 </div>
                 <div class="button-row">
                     <button type="submit" class="button primary" disabled={isLoading}>

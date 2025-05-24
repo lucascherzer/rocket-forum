@@ -4,9 +4,15 @@
     --secondary-color: #f5a623;
     --accent-color: #e94e77;
     --background-color: #f9f9f9;
+    --background-color-alpha: rgba(249, 249, 249, 0.9);
+    --shadow-color: black;
+    --shadow-color-alpha: rgba(0, 0, 0, 0.18);
     --text-color: #222;
+    --text-color-white: #fff;
     --success-color: #4caf50;
+    --success-color-hover: #3e9142;
     --error-color: #e53935;
+    --error-color-hover: #d32f2f;
     --warning-color: #fbc02d;
     --info-color: #2196f3;
     --disabled-color: #cccccc;
