@@ -1,12 +1,17 @@
-use std::fs;
 use std::path::Path;
 use std::process::Command;
+use std::{env, fs};
 
 fn main() {
     let frontend_dir = "frontend";
     let output_dir = format!("{frontend_dir}/build");
     let target_dir = "static"; // or wherever you're serving files from
-
+    if env::var("NIX_BUILD").ok().is_some() {
+        // If we are building with nix, the frontend is already built by nix,
+        // so we skip it.
+        // We would not have internet access anyways, due to the sandbox.
+        return;
+    }
     let _status = Command::new("npm")
         .arg("install")
         .current_dir(frontend_dir)
