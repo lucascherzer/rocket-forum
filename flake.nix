@@ -21,13 +21,23 @@
             cargoLock.lockFile = ./Cargo.lock;
             buildInputs = [ self.packages.${system}.frontend ];
             NIX_BUILD = 1;
+            preBuild = ''
+              cp -r "${self.packages.${system}.frontend}/static/build/" "./static"
+            '';
           };
-          frontend = pkgs.buildNpmPackage {
+          frontend = pkgs.buildNpmPackage rec {
             pname = "frontend";
             version = "0.1.0";
             src = ./frontend;
             npmDepsHash = "sha256-0iV4n92oSnBJ/xVkhTyurqzIVMG5dSDmavnHwrbB0jU=";
             buildInputs = [ pkgs.nodejs ];
+            buildPhase = ''
+              npm run build --locked
+            '';
+            installPhase = ''
+              mkdir -p $out/static
+              cp -r "build/" $out/static
+            '';
 
           };
         }
