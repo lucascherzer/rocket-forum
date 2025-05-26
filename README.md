@@ -1,4 +1,4 @@
-# Web Engineering Project
+# Rocket Forum
 
 ## Tech Stack
 - backend: Rust + Rocket
