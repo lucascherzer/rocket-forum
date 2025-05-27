@@ -1,3 +1,4 @@
+use std::env;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -5,32 +6,59 @@ use std::process::Command;
 fn main() {
     let frontend_dir = "frontend";
     let output_dir = format!("{frontend_dir}/build");
-    let target_dir = "static"; // or wherever you're serving files from
+    let target_dir = "static";
 
-    let _status = Command::new("npm")
+    let node_path = r"C:\nvm4w\nodejs"; // or wherever your npm/node is
+    let current_path = env::var("PATH").unwrap_or_default();
+    let new_path = format!("{node_path};{current_path}");
+
+    // Set new PATH for the npm build to find node
+    unsafe {
+    env::set_var("PATH", &new_path);
+     } // <— Pass by reference
+
+    let npm = if cfg!(target_os = "windows") {
+        "npm.cmd"
+    } else {
+        "npm"
+    };
+
+    // Run `npm install`
+    let status_install = Command::new(npm)
         .arg("install")
-        .current_dir(frontend_dir)
+        .current_dir(&frontend_dir)
         .status()
-        .expect("Failed to build frontend");
-    // Step 1: Run `npm run build` in the frontend dir
-    let status = Command::new("npm")
-        .arg("run")
-        .arg("build")
-        .current_dir(frontend_dir)
-        .status()
-        .expect("Failed to build frontend");
+        .expect("Failed to run `npm install`");
 
-    if !status.success() {
-        panic!("Frontend build failed");
+    if !status_install.success() {
+        panic!("npm install failed");
     }
 
-    // Step 2: Copy the dist output to the static folder
-    let _ = fs::remove_dir_all(target_dir); // Clean target dir if it exists
-    fs::create_dir_all(target_dir).unwrap();
-    copy_dir_all(&output_dir, target_dir).unwrap();
+    // Run `npm run build`
+    let status_build = if cfg!(target_os = "windows") {
+        Command::new("cmd")
+            .args(["/C", "npm run build"])
+            .current_dir(&frontend_dir)
+            .status()
+    } else {
+        Command::new("sh")
+            .arg("-c")
+            .arg("npm run build")
+            .current_dir(&frontend_dir)
+            .status()
+    }
+    .expect("Failed to run `npm run build`");
+
+    if !status_build.success() {
+        panic!("npm run build failed");
+    }
+
+    // Copy frontend/build to static/
+    let _ = fs::remove_dir_all(&target_dir);
+    fs::create_dir_all(&target_dir).unwrap();
+    copy_dir_all(&output_dir, &target_dir).unwrap();
 }
 
-// Helper to recursively copy files
 fn copy_dir_all(src: &str, dst: &str) -> std::io::Result<()> {
     for entry in fs::read_dir(src)? {
         let entry = entry?;
