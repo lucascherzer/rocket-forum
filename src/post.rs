@@ -32,6 +32,8 @@ pub enum PostError {
     #[response(status = 403)]
     /// General 403
     InvalidInput(&'static str),
+    #[response(status = 500)]
+    ImageUploadFailed(&'static str),
 }
 
 /// This contains the logic for creating posts and commenting on them
@@ -132,11 +134,17 @@ pub async fn route_create_post(
                 minio
                     .copy_object(IMG_BUCKET_NAME, img_name, tmp_obj_ref)
                     .await
-                    .ok()?;
+                    .map_err(|_e| {
+                        dbg_print!(_e);
+                        PostError::ImageUploadFailed("error with minio encountered")
+                    })?;
                 minio
                     .remove_object(TMP_IMG_BUCKET_NAME, img_name)
                     .await
-                    .ok()?;
+                    .map_err(|_e| {
+                        dbg_print!(_e);
+                        PostError::ImageUploadFailed("error with minio encountered")
+                    })?;
             } else {
                 // TODO: keep track of uploaded images, delete if one fails
                 panic!("Image '{}' is not known", img_name);
