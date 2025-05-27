@@ -1,6 +1,6 @@
 //! This module covers common redirects.
 use crate::auth::UserSession;
-use rocket::{http::CookieJar, response::Redirect};
+use rocket::response::Redirect;
 
 #[rocket::get("/")]
 pub fn route_frontend_index() -> Redirect {
