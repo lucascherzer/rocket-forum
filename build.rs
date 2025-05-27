@@ -1,4 +1,3 @@
-use std::env;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
@@ -7,16 +6,18 @@ fn main() {
     let frontend_dir = "frontend";
     let output_dir = format!("{frontend_dir}/build");
     let target_dir = "static";
+    #[cfg(target_os = "windows")]
+    {
+        use std::env;
+        let node_path = r"C:\nvm4w\nodejs";
+        let current_path = env::var("PATH").unwrap_or_default();
+        let new_path = format!("{node_path};{current_path}");
 
-    let node_path = r"C:\nvm4w\nodejs"; // or wherever your npm/node is
-    let current_path = env::var("PATH").unwrap_or_default();
-    let new_path = format!("{node_path};{current_path}");
-
-    // Set new PATH for the npm build to find node
-    unsafe {
-    env::set_var("PATH", &new_path);
-     } // <— Pass by reference
-
+        // Set new PATH for the npm build to find node
+        unsafe {
+            env::set_var("PATH", &new_path);
+        }
+    }
     let npm = if cfg!(target_os = "windows") {
         "npm.cmd"
     } else {
