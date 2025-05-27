@@ -26,6 +26,7 @@ docker compose up
 ```sh
 cargo run # for debug builds
 cargo run --release # for optimized builds
+cargo run -F fingerprinting # to include the fingerprinting mechanism
 ```
 ## Docs
 The documentation can be automatically generated:
@@ -52,3 +53,10 @@ We use SurrealDB with the following schema:
 
 The database automatically initialised (if not already) once when the server
 starts.
+
+# Troubleshooting
+
+> [!warning]- Login does not work
+> Make sure you use 127.0.0.1:PORT in the address bar. If you use localhost,
+> it will resolve to 127.0.0.1 and the `SameSite` attribute on the `session_id`
+> cookie can not be set

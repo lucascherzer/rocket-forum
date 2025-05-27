@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use rocket::{
     Responder, State,
-    http::{self, CookieJar},
+    http::{self, Cookie, CookieJar},
     outcome::Outcome,
     request::{self, FromRequest},
     response::Redirect,
@@ -12,6 +12,8 @@ use rocket::{
 use surrealdb::{RecordId, Surreal, Uuid, engine::any::Any};
 
 use crate::dbg_print;
+
+pub static USERNAME_MAX_LENGTH: usize = 20;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "rocket::serde")]
@@ -237,10 +239,11 @@ pub async fn route_signup(
     create_user: Json<CreateUser>,
     session: Option<UserSession>,
 ) -> Result<(), AuthError> {
-    // TODO: redirect when already logged in
-    // TODO: redirect after user creation
     let expected: Vec<CountWrapper> = vec![];
     let create_user = create_user.into_inner();
+    if &create_user.username.len() >= &USERNAME_MAX_LENGTH {
+        return Err(AuthError::InvalidInput("The username is too long"));
+    }
     let create_role: UserRole;
     if let Ok(db_result) = db
         .query("SELECT count(username) FROM Users WHERE username = $username")
@@ -353,7 +356,13 @@ pub async fn route_login(
 
     let session = login(&db, user.into_inner()).await?;
 
-    cookies.add(("session_id", session.to_string()));
+    cookies.add(
+        Cookie::build(("session_id", session.to_string()))
+            .same_site(http::SameSite::Strict)
+            .http_only(true)
+            .secure(true),
+        // secure does not work on chrome, as long as there is no TLS
+    );
 
     Ok(Redirect::to("/"))
     // if not logged in, check if user exists and password is correct

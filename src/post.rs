@@ -16,6 +16,9 @@ use crate::{
     minio::{IMG_BUCKET_NAME, TMP_IMG_BUCKET_NAME},
 };
 
+static POST_HEADING_MAX_LENGTH: usize = 1000;
+static POST_TEXT_MAX_LENGTH: usize = 10000;
+
 #[non_exhaustive]
 #[derive(Responder, Debug)]
 pub enum PostError {
@@ -106,11 +109,18 @@ pub async fn route_create_post(
     db: &State<Surreal<Any>>,
     data: Json<CreatePost>,
     minio: &State<Minio>,
-) -> Option<Json<PostId>> {
-    // TODO: limit the length of heading and text
-    // TODO: Proper error handling via Result<Json..., Custom Error Type>
+) -> Result<Json<PostId>, PostError> {
     let data = data.into_inner();
-    let full_text = format!("{}{}", data.heading, data.text);
+    if *&data.heading.is_empty()
+        || &data.heading.len() > &POST_HEADING_MAX_LENGTH
+        || *&data.text.is_empty()
+        || &data.text.len() > &POST_TEXT_MAX_LENGTH
+    {
+        return Err(PostError::InvalidInput(
+            "The posts text and body may not be empty and must not exceed the max length (1000 and 10000 characters)",
+        ));
+    }
+    let full_text = format!("{} {}", data.heading, data.text);
     let hashtags: Vec<String> = extract_hashtags(full_text).into_iter().collect();
 
     // before creating the post: check if all images are present, if they are,
@@ -142,11 +152,22 @@ pub async fn route_create_post(
         .bind(("hashtags", hashtags))
         .bind(("images", data.images))
         .await
-        .ok()?; // Early return on error
+        .map_err(|_e| {
+            dbg_print!(_e);
+            PostError::DatabaseError("")
+        })?; // Early return on error
 
-    let new_post = res.take::<Vec<NewPostResult>>(1).ok()?.into_iter().next()?; // Safe access to first result
+    let new_post = res
+        .take::<Vec<NewPostResult>>(1)
+        .map_err(|_e| {
+            dbg_print!(_e);
+            PostError::DatabaseError("")
+        })?
+        .into_iter()
+        .next()
+        .ok_or(PostError::DatabaseError(""))?;
 
-    Some(Json(PostId {
+    Ok(Json(PostId {
         id: new_post.out.to_string(),
     }))
 }
@@ -263,6 +284,7 @@ pub struct ViewPost {
     hashtags: Vec<String>,
     created_at: Datetime,
     comments: Vec<String>,
+    likes: i32,
 }
 
 /// The possible errors returned by [route_get_latest_posts] and [route_get_post]
@@ -351,21 +373,26 @@ pub async fn route_get_comment(
     }
 }
 
-/// This route can be used to retrieve the latest posts.
+/// This route can be used to retrieve the latest posts (twenty at a time).
 /// When called using the GET param `time_offset`, you can cut off posts
-/// at a certain date
+/// at a certain date.
+/// The `page` parameter allows for pagination and is zero indexed.
 /// # Example
 /// ```sh
-/// curl http://localhost:8000/api/post/latest?time_offset=1970-01-01
+/// curl http://localhost:8000/api/post/latest?time_offset=1970-01-01?page=0
+/// # The parameters above are actually the default params, so this is equivalent:
+/// curl http://localhost:8000/api/post/latest
 /// ```
-#[rocket::get("/latest?<time_offset>")]
+#[rocket::get("/latest?<time_offset>&<page>")]
 pub async fn route_get_latest_posts(
     db: &State<Surreal<Any>>,
     time_offset: Option<String>,
+    page: Option<usize>,
 ) -> Result<Json<Vec<ViewPost>>, GetPostsError> {
     let mut query = db
         .query(include_str!("queries/get_latest_posts.surql"))
         .bind(("time_offset", time_offset.unwrap_or("1970-01-01".into())))
+        .bind(("page", page.unwrap_or(0)))
         .await
         .unwrap();
     query
