@@ -101,7 +101,7 @@ pub async fn route_create_post(
             "The posts text and body may not be empty and must not exceed the max length (1000 and 10000 characters)",
         ));
     }
-    let full_text = format!("{}{}", data.heading, data.text);
+    let full_text = format!("{} {}", data.heading, data.text);
     let hashtags: Vec<String> = extract_hashtags(full_text).into_iter().collect();
 
     let mut res = db
