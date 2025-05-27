@@ -241,6 +241,7 @@ pub struct ViewPost {
     hashtags: Vec<String>,
     created_at: Datetime,
     comments: Vec<String>,
+    likes: i32,
 }
 
 /// The possible errors returned by [route_get_latest_posts] and [route_get_post]

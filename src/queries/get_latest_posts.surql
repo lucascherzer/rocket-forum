@@ -5,6 +5,7 @@ SELECT
     heading,
     text,
     hashtags,
+    array::len(<-liked<-Users) as likes,
     (<-created<-Users.username)[0] AS author,
     <-commented.id.map(|$c| <string> record::id($c)) AS comments
 
