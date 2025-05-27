@@ -61,10 +61,13 @@ async fn rocket() -> _ {
     let (db, minio, hash_iv) = init().await;
     let cors_conf = get_cors_config().unwrap();
     let db_initialiser = DbInitialiser;
+    let minio_initialiser = MinioInitialiser;
     #[allow(unused_mut)] // this mut is only used on the fingerprinting feature
     let mut app = rocket::build()
         .manage(db)
         .attach(db_initialiser)
+        .manage(hash_iv)
+        .manage(minio)
         .attach(minio_initialiser)
         .attach(cors_conf)
         .attach(Template::fairing())
