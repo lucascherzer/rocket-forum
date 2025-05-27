@@ -24,6 +24,7 @@ form {
 
 .login-container {
     max-width: 400px;
+    min-width: 300px;
     margin: 2rem auto;
     padding: 2rem;
     background: rgba(255, 255, 255, 0.9);

@@ -26,6 +26,9 @@ pub enum PostError {
     #[response(status = 500)]
     /// Occurs when the DB gives an unrecoverable error
     DatabaseError(&'static str),
+    #[response(status = 403)]
+    /// General 403
+    InvalidInput(&'static str),
 }
 
 /// This contains the logic for creating posts and commenting on them
@@ -148,6 +151,13 @@ pub async fn route_create_post(
     }))
 }
 
+/// Retrieves all hashtags from a given text.
+/// # Example
+/// ```rs
+/// let text: String = "This is an #example".into();
+/// let mut tags: HashSet<String> = HashSet::new().insert("#example");
+/// assert_eq!(tags, extract_hashtags(text));
+/// ```
 pub fn extract_hashtags(text: String) -> HashSet<String> {
     let mut hashtags: HashSet<String> = HashSet::new();
     regex!(r"(^|\s)#\w+")
@@ -170,8 +180,13 @@ pub async fn route_create_comment(
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreateComment>,
-) -> Option<Json<CommentId>> {
+) -> Result<Json<CommentId>, PostError> {
     let data = data.into_inner();
+    if data.post.starts_with("Posts:") {
+        return Err(PostError::InvalidInput(
+            "The post id should omit the `Posts:` prefix",
+        ));
+    }
     dbg_print!("Creating new comment");
     let hashtags: Vec<String> = extract_hashtags(data.text.clone()).into_iter().collect();
 
@@ -183,12 +198,23 @@ pub async fn route_create_comment(
         .bind(("hashtags", hashtags))
         .await;
     dbg_print!(&res);
-    let mut res = res.ok()?;
+    let mut res = res.map_err(|_e| {
+        dbg_print!("{}", _e);
+        PostError::DatabaseError("An error with the database occured")
+    })?;
 
-    let new_comment = res.take::<Vec<RecordId>>(2).ok()?.into_iter().next()?; // Safe access
+    let new_comment = res
+        .take::<Vec<RecordId>>(2)
+        .map_err(|_e| {
+            dbg_print!("{}", _e);
+            PostError::DatabaseError("Problem deserialising result")
+        })?
+        .into_iter()
+        .next()
+        .ok_or(PostError::DatabaseError("Problem deserialising result"))?;
     dbg_print!(&new_comment);
 
-    Some(Json(CommentId {
+    Ok(Json(CommentId {
         id: new_comment.to_string(),
     }))
 }
@@ -230,17 +256,99 @@ pub async fn route_like(
 #[serde(crate = "rocket::serde")]
 pub struct ViewPost {
     id: String,
+    author: String,
     heading: String,
+    images: Vec<String>,
     text: String,
     hashtags: Vec<String>,
     created_at: Datetime,
+    comments: Vec<String>,
 }
 
-/// The possible errors returned by [route_get_latest_posts]
-#[derive(Responder, Debug)]
-pub enum GetLatestPostsError {
+/// The possible errors returned by [route_get_latest_posts] and [route_get_post]
+#[derive(Responder, Debug, Clone)]
+pub enum GetPostsError {
     #[response(status = 400)]
     InvalidInput(&'static str),
+    #[response(status = 500)]
+    DatabaseError(&'static str),
+    #[response(status = 404)]
+    NotFound(&'static str),
+}
+
+/// Get a post by id.
+/// Takes the Posts id (specifically the part after the colon), and returns all
+/// fields except `deleted`. See [ViewPost]
+#[rocket::get("/<post_id>")]
+pub async fn route_get_post(
+    db: &State<Surreal<Any>>,
+    post_id: String,
+) -> Result<Json<ViewPost>, GetPostsError> {
+    if post_id.starts_with("Posts:") {
+        return Err(GetPostsError::InvalidInput(
+            "The post id should not start with `Posts:`. Only send the part after the colon.",
+        ));
+    }
+    let mut query = db
+        .query(include_str!("queries/get_post.surql"))
+        .bind(("post_id", post_id))
+        .await
+        .unwrap();
+    let res = query
+        .take::<Vec<ViewPost>>(0)
+        .map_err(|_e| GetPostsError::DatabaseError(""))?;
+    if let Some(post) = res.get(0) {
+        Ok(Json(post.clone()))
+    } else {
+        dbg_print!("{}", &res);
+        Err(GetPostsError::NotFound(
+            "No post with that id could be found",
+        ))
+    }
+}
+/// The object returned whenever a user wants to view a comment
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(crate = "rocket::serde")]
+pub struct ViewComment {
+    author: String,
+    created_at: Datetime,
+    hashtags: Vec<String>,
+    post: String,
+    likes: usize,
+    dislikes: usize,
+    id: String,
+    text: String,
+}
+/// Get a comment by id.
+/// Takes the comments id (specifically the part after the colon), and returns all
+/// fields except `deleted`. See [ViewComment]
+#[rocket::get("/comment/<comment_id>")]
+pub async fn route_get_comment(
+    db: &State<Surreal<Any>>,
+    comment_id: String,
+) -> Result<Json<ViewComment>, GetPostsError> {
+    if comment_id.starts_with("commented:") {
+        return Err(GetPostsError::InvalidInput(
+            "The comment id should not start with `commented:`. Only send the part after the colon.",
+        ));
+    }
+    let mut query = db
+        .query(include_str!("queries/get_comment.surql"))
+        .bind(("comment_id", comment_id))
+        .await
+        .unwrap();
+    let res = query.take::<Vec<ViewComment>>(0).map_err(|_e| {
+        dbg_print!(_e);
+        GetPostsError::DatabaseError("")
+    })?;
+    if let Some(comment) = res.get(0) {
+        Ok(Json(comment.clone()))
+    } else {
+        dbg_print!("{}", &res);
+        Err(GetPostsError::NotFound(
+            "No comment with that id could be found",
+        ))
+    }
 }
 
 /// This route can be used to retrieve the latest posts.
@@ -254,7 +362,7 @@ pub enum GetLatestPostsError {
 pub async fn route_get_latest_posts(
     db: &State<Surreal<Any>>,
     time_offset: Option<String>,
-) -> Result<Json<Vec<ViewPost>>, GetLatestPostsError> {
+) -> Result<Json<Vec<ViewPost>>, GetPostsError> {
     let mut query = db
         .query(include_str!("queries/get_latest_posts.surql"))
         .bind(("time_offset", time_offset.unwrap_or("1970-01-01".into())))
@@ -264,7 +372,7 @@ pub async fn route_get_latest_posts(
         .take::<Vec<ViewPost>>(0)
         .map_err(|_e| {
             dbg_print!(_e);
-            GetLatestPostsError::InvalidInput("")
+            GetPostsError::InvalidInput("")
         })
         .map(|v| Json(v))
 }

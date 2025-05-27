@@ -1,9 +1,12 @@
 //! This module includes fingerprinting functionality, meaning it enables us to
 //! distinguish clients based on a few parameters.
+//! This is not included by default - to use it, enable the `fingerprinting`
+//! feature.
 //!  At the moment, these parameters are
 //! - user_agent
 //! - client_ip
 //! - session_id Cookie
+//!
 //! more could be added with relative ease in the future.
 //! # Embedding
 //! We use an embeddings model to vectorize said parameters, storing the points
@@ -12,13 +15,15 @@
 //! # Performance
 //! Generating embeddings for every request is very resource intensive, and
 //! not worth the advantage it gives. Frankly it's an overengineered, mostly
-//! useless when factoring in its cost piece of code that could be implemented
+//! useless when factoring in its cost, piece of code that could be implemented
 //! in a simpler fashion. But it could be sped up significantly by using a
 //! custom made vectorisation primitive
+
 use std::{iter::zip, net::IpAddr};
 
 use crate::dbg_print;
 use fastembed::{InitOptions, TextEmbedding};
+use rocket::serde::json::Json;
 use rocket::{
     Request, State,
     fairing::{Fairing, Kind},
@@ -28,11 +33,12 @@ use rocket::{
 };
 use rocket_dyn_templates::{Template, context};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use surrealdb::{RecordId, Surreal, engine::any::Any};
 
 /// The maximum manhattan distance two points in vector space may be apart to
 /// still be considered the same
-pub static VECTOR_DISTANCE_THRESHOLD: f32 = 0.01;
+pub static VECTOR_DISTANCE_THRESHOLD: f32 = 10.0;
 
 /// A rocket middleware that takes parameters from the request like the
 /// session_id cookie, the user agent, the remote ip and computes an embedding.
@@ -41,21 +47,17 @@ pub struct Fingerprinter;
 
 /// [NnSearchResult] is one of the results of the query defined in
 /// src/queries/check_nearest_fingerprint.
-/// It comes in two flavours: `found_before` and `created` being set,
-/// or `found_before` and `nearest_neighbour` being set.
+/// It comes in two flavours:
+/// - [NnSearchResult::Created], which is returned if the fingerprint was unknown
+/// until the check, but was created. Its value is the new ID.
+/// - [NnSearchResult::Known], which is returned if the fingerprint is already
+/// known. Its value is the ID of the fingerprint
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct NnSearchResult {
-    /// When found_before is true, that means the database has identified
-    /// another point within the threshold defined by
-    /// [VECTOR_DISTANCE_THRESHOLD]. This also means that `nearest_neighbour` is
-    /// set.
-    /// When it is false, no such point could be identified. The query then
-    /// creates a new entry, whose ID it returns in `created`
-    found_before: bool,
-    /// The id of the newly created point.
-    created: Option<RecordId>,
-    /// The id of the newly created neighbour.
-    nearest_neighbour: Option<RecordId>,
+pub enum NnSearchResult {
+    #[serde(rename = "created")]
+    Created(String),
+    #[serde(rename = "known")]
+    Known(String),
 }
 
 /// This is called once at the beginning of the main method. It instantiates a
@@ -183,11 +185,9 @@ pub async fn route_trackme<'r>(
     model: &State<TextEmbedding>,
     db: &State<Surreal<Any>>,
     tracker: TrackingInfo<'r>,
-) -> String {
-    format!(
-        "{:?}",
-        Fingerprinter::track_request(model, db, tracker).await
-    )
+) -> Option<Json<NnSearchResult>> {
+    let fp = Fingerprinter::track_request(model, db, tracker).await?;
+    Some(Json(fp))
 }
 
 #[rocket::get("/trackme")]
@@ -199,29 +199,20 @@ pub async fn route_frontend_trackme<'r>(
     let fingerprint = Fingerprinter::track_request(model, db, tracker)
         .await
         .unwrap();
-    let nn = fingerprint
-        .nearest_neighbour
-        .map(|v| v.key().to_string())
-        .unwrap_or("".to_string());
-    // let nn = {
-    //     if let Some(nn) = fingerprint.nearest_neighbour {
-    //         nn.to_string()
-    //     } else {
-    //         "".to_string()
-    //     }
-    let fb = fingerprint.found_before;
-    let ni = fingerprint
-        .created
-        .map(|v| v.key().to_string())
-        .unwrap_or("".to_string());
-    Template::render(
-        "trackme",
-        context! {
-            nn: nn,
-            found_before: fb,
-            new_key: ni,
-        },
-    )
+    match fingerprint {
+        NnSearchResult::Known(id) => Template::render(
+            "trackme-known",
+            context! {
+                id: id
+            },
+        ),
+        NnSearchResult::Created(id) => Template::render(
+            "trackme-unknown",
+            context! {
+                id: id
+            },
+        ),
+    }
 }
 
 /// [TrackingInfo] contains information we use to fingerprint clients.

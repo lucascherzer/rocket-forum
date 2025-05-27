@@ -20,12 +20,12 @@ IF array::len($nn) = 0 {
         session_id: $session_id
     });
     RETURN {
-        found_before: false,
-        created: $latest[0].id
+        -- found_before: false,
+        created: record::id($latest[0].id)
     };
 } ELSE {
     RETURN {
-        found_before: true,
-        nearest_neighbour: $nn[0].id
+        -- found_before: true,
+        known: record::id($nn[0].id)
     };
 }
