@@ -6,5 +6,26 @@
         <p>This page can be used to test the fingerprinting utility</p>
         <h2>Your fingerprint</h2>
         <p>We have not identified you before. You id from now on is: {{id}} </p>
+        <h2>FAQ</h2>
+                <h3>How does it work?</h3>
+                    <p>Our fingerprinting utility works by collecting information about your
+                    device from the requests you make, such as the browser you are using,
+                    the operating system you are running, and the cookies you have present.
+                    This information is then used to create a unique point in
+                    384-dimensional space. Points that are within a certain distance are
+                    considered to be the same person.</p>
+                <h3>How is the point derived from the information?</h3>
+                    <p>
+                    We use an embeddings model from https://github.com/Anush008/fastembed-rs
+                    </p>
+                <h3>How efficient is it?</h3>
+                    <p>
+                    It is not very efficient, and mostly made for demonstration purposes.
+                    The biggest overhead is that it requires a lot of computational resources
+                    to process the data and generate the embeddings. A custom made
+                    vectorisation algorithm could vastly improve the efficiency and accuracy
+                    of the fingerprinting utility for example by parsing and accounting for
+                    the structure in the User-Agent.
+                    </p>
     </body>
 </html>
