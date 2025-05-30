@@ -123,16 +123,23 @@ p {
 }
 
 .post-card {
-    background: white;
+    background-color: #fff;
+    border: 1px solid #ddd;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 1.5rem;
-    transition: transform 0.2s, box-shadow 0.2s;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease-in-out; /* For smooth expansion */
 }
 
 .post-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.post-card.expanded {
+    /* Optional: slightly different styling when expanded, e.g., more shadow */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .post-card h2 {
@@ -197,4 +204,57 @@ p {
     align-items: center;
     background: white; /* Optional: Hintergrundfarbe während des Ladens */
     z-index: 1000;
+}
+
+.post-card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease-in-out; /* For smooth expansion */
+}
+
+.post-card.expanded {
+    /* Optional: slightly different styling when expanded, e.g., more shadow */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.comment-section {
+    margin-top: 12px;
+    border-top: 1px solid #eee;
+    padding-top: 12px;
+}
+
+.comment-section textarea {
+    width: calc(100% - 20px); /* Account for padding */
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    min-height: 40px; /* Initial height */
+    resize: vertical;
+    transition: min-height 0.2s ease-in-out;
+}
+
+.comment-section textarea.expanded {
+    min-height: 80px; /* Expanded height */
+}
+
+.comment-button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 8px;
+    display: block; /* Or inline-block if preferred */
+}
+
+.comment-button:hover {
+    background-color: #0056b3;
 }
