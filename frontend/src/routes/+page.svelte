@@ -6,12 +6,17 @@
 	import { fetchLatestPosts } from '$lib/stores/posts';
 	import { posts } from '$lib/stores/posts';
 	import { getHashtagColor, getTextColor } from '$lib/utils/tagColors';
+	import { createComment } from '$lib/stores/comments'; // Import createComment
 	import '../style/mainpage.css';
 
 	let isLoading = true;
 	let showOverlay = false;
 	let isAuthenticated = false;
 	let postsLoading = true;
+
+	// State for comment text areas and expansion
+	let commentTexts: { [postId: string]: string } = {};
+	let activeCommentBox: string | null = null;
 
 	onMount(async () => {
 		try {
@@ -31,6 +36,35 @@
 			postsLoading = false;
 		}
 	});
+
+	// Initialize commentTexts when posts are loaded
+	$: {
+		if ($posts && $posts.length > 0) {
+			$posts.forEach(post => {
+				if (!(post.id in commentTexts)) {
+					commentTexts[post.id] = '';
+				}
+			});
+		}
+	}
+
+	async function handleAddComment(postId: string) {
+		const text = commentTexts[postId];
+		if (!text || text.trim() === '') {
+			alert('Comment cannot be empty.'); // Or some other user feedback
+			return;
+		}
+		try {
+			await createComment(postId, text);
+			commentTexts[postId] = ''; // Clear textarea after successful comment
+			activeCommentBox = null; // Collapse the box
+			// Optionally: refresh posts or comments list here
+			alert('Comment added successfully!');
+		} catch (error) {
+			console.error('Failed to add comment:', error);
+			alert('Failed to add comment. Please try again.');
+		}
+	}
 
 	function navigateToLogin() {
 		goto('/login');
@@ -115,7 +149,7 @@
 		{:else}
 			<div class="posts-container">
 				{#each $posts as post (post.id)}
-					<div class="post-card">
+					<div class="post-card" class:expanded={activeCommentBox === post.id}>
 						<h2>{post.heading}</h2>
 						<p>{post.text}</p>
 						<div class="post-footer">
@@ -132,9 +166,21 @@
 								{/each}
 							</div>
 						</div>
+						<div class="comment-section">
+							<textarea
+								bind:value={commentTexts[post.id]}
+								placeholder="Write a comment..."
+								on:focus={() => activeCommentBox = post.id}
+								class:expanded={activeCommentBox === post.id}
+							></textarea>
+							{#if activeCommentBox === post.id}
+								<button class="comment-button" on:click={() => handleAddComment(post.id)}>Comment</button>
+							{/if}
+						</div>
 					</div>
 				{/each}
 			</div>
 		{/if}
 	</div>
 {/if}
+
