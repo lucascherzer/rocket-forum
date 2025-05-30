@@ -12,3 +12,25 @@ services:
       - $SURREALDB_PASS
     ports:
       - 8080:8000
+
+  minio:
+    image: quay.io/minio/minio
+    env_file:
+      - .env
+    entrypoint:
+      - minio
+      - server
+      - /data
+      - --console-address
+      - ":9001"
+    ports:
+      - 9000:9000
+      - 9001:9001 # user interface. Remove in prod, useful for debugging
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - http://localhost:9000
+      interval: 5s
+      retries: 5
+      timeout: 3s

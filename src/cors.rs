@@ -1,8 +1,6 @@
 use rocket::http::Method;
 use rocket_cors::{AllowedOrigins, Cors, CorsOptions};
 
-// fuck cors
-
 pub fn get_cors_config() -> Option<Cors> {
     CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())

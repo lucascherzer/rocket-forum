@@ -33,8 +33,7 @@ use rocket::{
 };
 use rocket_dyn_templates::{Template, context};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use surrealdb::{RecordId, Surreal, engine::any::Any};
+use surrealdb::{Surreal, engine::any::Any};
 
 /// The maximum manhattan distance two points in vector space may be apart to
 /// still be considered the same
@@ -175,7 +174,6 @@ impl Fairing for Fingerprinter {
         _request: &'r Request<'_>,
         response: &mut rocket::Response<'r>,
     ) {
-        // Don't change a successful user's response, ever.
         if response.status() != rocket::http::Status::NotFound {
             return;
         }

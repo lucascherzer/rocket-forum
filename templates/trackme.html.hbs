@@ -1,0 +1,17 @@
+<html>
+
+    <head></head>
+    <body>
+        <h1>Fingerprinting Tester</h1>
+        <p>This page can be used to test the fingerprinting</p>
+        <h2>Your fingerprint</h2>
+        {{#if found_before}}
+            <p>Fingerprint is known: {{nn}} </p></br>
+            <p>Try opening this page in an incognito tab and see if the
+            fingerprints match</p>
+        {{else}}
+            <p>We have not found you before. Your new key is {{new_key}} </p>
+        {{/if}}
+
+    </body>
+</html>

@@ -1,3 +1,9 @@
+//! This module contains logic for initialising the database at startup.
+//!
+//! We use a SurrealDB instance (theoretically available as a cloud instance as
+//! well as a local test instance via docker compose. Just set the according
+//! values in .env) as our database of choice, as it provides a flexible way
+//! to structure data and has a good rust sdk.
 use rocket::fairing::{Fairing, Kind};
 use rocket::{Orbit, Rocket};
 use surrealdb::Surreal;
@@ -6,6 +12,8 @@ use surrealdb::opt::auth::Root;
 
 use crate::dbg_print;
 
+/// Tries to log into the database using the provided data, returns a handle to
+/// the database if successful.
 pub async fn get_db(
     surreal_url: &str,
     surreal_ns: &str,
@@ -23,6 +31,8 @@ pub async fn get_db(
     Ok(db)
 }
 
+/// The struct responsible for initialising the database. This is called once on
+/// startup by rocket using it's [Fairing] trait.
 pub struct DbInitialiser;
 
 #[rocket::async_trait]

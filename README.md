@@ -1,9 +1,7 @@
 # Rocket Forum
 
 ## Tech Stack
-- backend: Rust + Rocket
-- frontend: Svelte
-- db: SurrealDB
+![](assets/techstack.svg)
 
 ## API Testing
 The Webeng.json file can be imported into hoppscotch (and Postman?)
@@ -20,7 +18,7 @@ cp .env.example .env
 If you intend to run the app in release mode, `ROCKET_SECRET_KEY` must be set.
 This file does not need to be sourced, it's presence suffices.
 
-### Start the database
+### Start the database and object storage
 ```sh
 docker compose up
 ```
@@ -28,6 +26,7 @@ docker compose up
 ```sh
 cargo run # for debug builds
 cargo run --release # for optimized builds
+cargo run -F fingerprinting # to include the fingerprinting mechanism
 ```
 ## Docs
 The documentation can be automatically generated:
@@ -37,14 +36,27 @@ cargo doc --no-deps
 
 ### State
 
-The webserver is completely stateless as it saves all persistent state in
-a SurrealDB cloud instance. This means it can easily be scaled using a load
-balancer.
-
-> [!warning] File Upload
-> This is correct at the time of writing. But we do not have image uploads yet.
-> For images we may want to use the S3 free tier.
+The webserver is completely stateless as it saves all persistent database state
+in a SurrealDB instance (local or cloud, depends on .env).
+Similarly, all uploaded images are saved to a minio instance.
+This means that the server can easily be scaled using a load balancer.
 
 > [!warning] DDoS Protection
 > We want to have rate-limiting while the server can remain stateless.
-> It is not yet implemented but being worked on.
+> It is not yet implemented but being worked on. We aim to use redis as a
+> ephemeral storage.
+
+## Database
+
+We use SurrealDB with the following schema:
+![](assets/db-schema.png)
+
+The database automatically initialised (if not already) once when the server
+starts.
+
+# Troubleshooting
+
+> [!warning]- Login does not work
+> Make sure you use 127.0.0.1:PORT in the address bar. If you use localhost,
+> it will resolve to 127.0.0.1 and the `SameSite` attribute on the `session_id`
+> cookie can not be set

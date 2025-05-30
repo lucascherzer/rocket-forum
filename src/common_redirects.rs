@@ -1,4 +1,6 @@
-use rocket::{http::CookieJar, response::Redirect};
+//! This module covers common redirects.
+use crate::auth::UserSession;
+use rocket::response::Redirect;
 
 #[rocket::get("/")]
 pub fn route_frontend_index() -> Redirect {
@@ -6,8 +8,8 @@ pub fn route_frontend_index() -> Redirect {
 }
 
 #[rocket::get("/login")]
-pub fn route_frontend_login(cookies: &CookieJar<'_>) -> Redirect {
-    if cookies.get("session_id").is_some() {
+pub fn route_frontend_login(user: Option<UserSession>) -> Redirect {
+    if user.is_some() {
         return Redirect::to("/");
     } else {
         return Redirect::to("/login.html");

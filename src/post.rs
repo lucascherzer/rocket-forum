@@ -1,11 +1,23 @@
+//! Contains logic related to posts and comments.
+//!
+//! Handles things like post/comment creation (see [route_create_post] and
+//! [route_create_comment])
 use std::collections::HashSet;
 
 use lazy_regex::regex;
+use minio_rsc::{Minio, client::CopySource};
 use rocket::{Responder, State, serde::json::Json};
 use serde::{Deserialize, Serialize};
 use surrealdb::{Datetime, RecordId, Surreal, engine::any::Any};
 
-use crate::{auth::UserSession, dbg_print};
+use crate::{
+    auth::UserSession,
+    dbg_print,
+    minio::{IMG_BUCKET_NAME, TMP_IMG_BUCKET_NAME},
+};
+
+static POST_HEADING_MAX_LENGTH: usize = 1000;
+static POST_TEXT_MAX_LENGTH: usize = 10000;
 
 #[non_exhaustive]
 #[derive(Responder, Debug)]
@@ -20,19 +32,34 @@ pub enum PostError {
     #[response(status = 403)]
     /// General 403
     InvalidInput(&'static str),
+    #[response(status = 500)]
+    ImageUploadFailed(&'static str),
 }
 
 /// This contains the logic for creating posts and commenting on them
 // TODO
-// - Like/Dislike
 // - Get posts by some criteria (newest, hashtags, user)
 
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct CreatePost {
+    /// The heading of the post
     heading: String,
     // TODO: figure out how to add files to this
+    /// The text body of the post.
     text: String,
+
+    /// The list of images attached to the post. Can be omitted if it is a text
+    /// only post.
+    /// The images are supposed to be the id's returned by the
+    /// [crate::minio::route_image_upload] endpoint. This means to create a post, you have to
+    /// first upload all images via that route.
+    images: Option<Vec<String>>,
+    // ^ usually Option<Vec<T>>s are bad, as you could just use a vec of length
+    // 0, but if the client omits the images entirely, this route would not
+    // be triggered. So, to let the client omit the `images` field, and not
+    // requiring the client to explicitly set `"images": []`, we make it an
+    // Option
 }
 
 /// This object is received by [route_create_comment]
@@ -71,27 +98,59 @@ pub struct CommentId {
 #[derive(Debug, Deserialize, Clone, Serialize)]
 #[serde(crate = "rocket::serde")]
 pub struct LikePostOrComment {
+    /// This is the id of the post/comment. Example value:
+    /// `Posts:abcdefg`/`commented:hijklmno`
     subject: String,
 }
 
 /// [route_create_post] is the API route that is used to create posts (shocking,
-/// I know). It receives a JSON object in the body:
-/// ```json
-/// {
-///     "heading": "This is the posts heading",
-///     "text": "This is the posts text"
-/// }
-/// ```
+/// I know). It receives a JSON object in the body defined by [CreatePost]
 #[rocket::post("/new", data = "<data>")]
 pub async fn route_create_post(
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreatePost>,
-) -> Option<Json<PostId>> {
-    // TODO: limit the length of heading and text
+    minio: &State<Minio>,
+) -> Result<Json<PostId>, PostError> {
     let data = data.into_inner();
-    let full_text = format!("{}{}", data.heading, data.text);
+    if *&data.heading.is_empty()
+        || &data.heading.len() > &POST_HEADING_MAX_LENGTH
+        || *&data.text.is_empty()
+        || &data.text.len() > &POST_TEXT_MAX_LENGTH
+    {
+        return Err(PostError::InvalidInput(
+            "The posts text and body may not be empty and must not exceed the max length (1000 and 10000 characters)",
+        ));
+    }
+    let full_text = format!("{} {}", data.heading, data.text);
     let hashtags: Vec<String> = extract_hashtags(full_text).into_iter().collect();
+
+    // before creating the post: check if all images are present, if they are,
+    // move them to the permanent bucket
+    if let Some(images) = &data.images {
+        for img_name in images {
+            if let Ok(_) = minio.get_object(TMP_IMG_BUCKET_NAME, img_name).await {
+                let tmp_obj_ref = CopySource::new(TMP_IMG_BUCKET_NAME, img_name);
+                minio
+                    .copy_object(IMG_BUCKET_NAME, img_name, tmp_obj_ref)
+                    .await
+                    .map_err(|_e| {
+                        dbg_print!(_e);
+                        PostError::ImageUploadFailed("error with minio encountered")
+                    })?;
+                minio
+                    .remove_object(TMP_IMG_BUCKET_NAME, img_name)
+                    .await
+                    .map_err(|_e| {
+                        dbg_print!(_e);
+                        PostError::ImageUploadFailed("error with minio encountered")
+                    })?;
+            } else {
+                // TODO: keep track of uploaded images, delete if one fails
+                panic!("Image '{}' is not known", img_name);
+            }
+        }
+    }
 
     let mut res = db
         .query(include_str!("queries/create_post.surql"))
@@ -99,12 +158,24 @@ pub async fn route_create_post(
         .bind(("text", data.text))
         .bind(("user", user.user_id))
         .bind(("hashtags", hashtags))
+        .bind(("images", data.images))
         .await
-        .ok()?; // Early return on error
+        .map_err(|_e| {
+            dbg_print!(_e);
+            PostError::DatabaseError("")
+        })?; // Early return on error
 
-    let new_post = res.take::<Vec<NewPostResult>>(1).ok()?.into_iter().next()?; // Safe access to first result
+    let new_post = res
+        .take::<Vec<NewPostResult>>(1)
+        .map_err(|_e| {
+            dbg_print!(_e);
+            PostError::DatabaseError("")
+        })?
+        .into_iter()
+        .next()
+        .ok_or(PostError::DatabaseError(""))?;
 
-    Some(Json(PostId {
+    Ok(Json(PostId {
         id: new_post.out.to_string(),
     }))
 }
@@ -177,6 +248,8 @@ pub async fn route_create_comment(
     }))
 }
 
+/// Likes a post or comment.
+/// The body is a [LikePostOrComment]
 #[rocket::post("/like", data = "<data>")]
 pub async fn route_like(
     user: UserSession,
@@ -219,6 +292,7 @@ pub struct ViewPost {
     hashtags: Vec<String>,
     created_at: Datetime,
     comments: Vec<String>,
+    likes: i32,
 }
 
 /// The possible errors returned by [route_get_latest_posts] and [route_get_post]
@@ -307,21 +381,26 @@ pub async fn route_get_comment(
     }
 }
 
-/// This route can be used to retrieve the latest posts.
+/// This route can be used to retrieve the latest posts (twenty at a time).
 /// When called using the GET param `time_offset`, you can cut off posts
-/// at a certain date
+/// at a certain date.
+/// The `page` parameter allows for pagination and is zero indexed.
 /// # Example
 /// ```sh
-/// curl http://localhost:8000/api/post/latest?time_offset=1970-01-01
+/// curl http://localhost:8000/api/post/latest?time_offset=1970-01-01?page=0
+/// # The parameters above are actually the default params, so this is equivalent:
+/// curl http://localhost:8000/api/post/latest
 /// ```
-#[rocket::get("/latest?<time_offset>")]
+#[rocket::get("/latest?<time_offset>&<page>")]
 pub async fn route_get_latest_posts(
     db: &State<Surreal<Any>>,
     time_offset: Option<String>,
+    page: Option<usize>,
 ) -> Result<Json<Vec<ViewPost>>, GetPostsError> {
     let mut query = db
         .query(include_str!("queries/get_latest_posts.surql"))
         .bind(("time_offset", time_offset.unwrap_or("1970-01-01".into())))
+        .bind(("page", page.unwrap_or(0)))
         .await
         .unwrap();
     query

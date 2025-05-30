@@ -6,6 +6,7 @@
 /// The rate-limiting implemented here is stateless on the http server.
 /// We achieve this by storing all stateful information on the cloud database.
 /// The algorithm used here is a leaky bucket.
+#[allow(dead_code)]
 struct RateLimitEnforcer;
 
 // enum SourceIdentifier {
