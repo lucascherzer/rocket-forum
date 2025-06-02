@@ -341,6 +341,7 @@ pub async fn route_get_post(
 #[serde(crate = "rocket::serde")]
 pub struct ViewComment {
     author: String,
+    author_id: String,
     created_at: Datetime,
     hashtags: Vec<String>,
     post: String,

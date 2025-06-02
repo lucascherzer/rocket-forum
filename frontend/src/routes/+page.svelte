@@ -3,10 +3,11 @@
 	import { goto } from '$app/navigation';
 	import { checkAuthStatus, logout } from '$lib/stores/auth';
 	import { onMount } from 'svelte';
-	import { fetchLatestPosts, likePost } from '$lib/stores/posts';
-	import { posts } from '$lib/stores/posts';
+	import { fetchLatestPosts, posts } from '$lib/stores/posts';
 	import { getHashtagColor, getTextColor } from '$lib/utils/tagColors';
 	import { createComment } from '$lib/stores/comments';
+	import { fetchCommentById, fetchCommentsByIds } from '$lib/stores/comments'; // fetchCommentsByIds hinzufügen
+	import type { Comment, ViewPost } from '$lib/types';
 	import '../style/mainpage.css';
 
 	let isLoading = true;
@@ -17,33 +18,36 @@
 	// State for comment text areas and expansion
 	let commentTexts: { [postId: string]: string } = {};
 	let activeCommentBox: string | null = null;
-	
+
 	// State for like button loading
 	let likingPosts: { [postId: string]: boolean } = {};
+
+	// State für geladene Kommentare und deren Sichtbarkeit
+	let postComments: { [postId: string]: Comment[] } = {};
+	let numVisibleComments: { [postId: string]: number } = {};
+	let commentsLoading: { [postId: string]: boolean } = {};
 
 	onMount(async () => {
 		try {
 			isLoading = true;
-			// Check authentication status
 			isAuthenticated = await checkAuthStatus();
-
 			if (isAuthenticated) {
-				// Only load posts if user is authenticated
 				postsLoading = true;
 				await fetchLatestPosts();
+				// Die initiale Kommentarladung erfolgt jetzt reaktiv auf $posts
 			}
 		} catch (error) {
 			console.error('Error loading page:', error);
 		} finally {
 			isLoading = false;
-			postsLoading = false;
+			postsLoading = false; // Wird auch hier gesetzt, falls nicht authentifiziert
 		}
 	});
 
-	// Initialize commentTexts when posts are loaded
+	// Initialisiert commentTexts, wenn Posts geladen werden
 	$: {
 		if ($posts && $posts.length > 0) {
-			$posts.forEach(post => {
+			$posts.forEach((post) => {
 				if (!(post.id in commentTexts)) {
 					commentTexts[post.id] = '';
 				}
@@ -51,34 +55,23 @@
 		}
 	}
 
-	async function handleAddComment(postId: string) {
-		const text = commentTexts[postId];
-		if (!text || text.trim() === '') {
-			alert('Comment cannot be empty.'); // Or some other user feedback
-			return;
-		}
-		try {
-			await createComment(postId, text);
-			commentTexts[postId] = ''; // Clear textarea after successful comment
-			activeCommentBox = null; // Collapse the box
-			// Optionally: refresh posts or comments list here
-			alert('Comment added successfully!');
-		} catch (error) {
-			console.error('Failed to add comment:', error);
-			alert('Failed to add comment. Please try again.');
+	// Lädt alle Kommentare für jeden Post, wenn Posts aktualisiert werden
+	$: {
+		if ($posts && Array.isArray($posts)) {
+			loadCommentsForPosts();
 		}
 	}
 
 	async function handleLikePost(postId: string) {
 		if (likingPosts[postId]) return; // Prevent double-clicking
-		
+
 		likingPosts[postId] = true;
 		try {
 			// Pass the post ID directly (it already contains "Posts:" prefix)
 			await likePost(postId);
 		} catch (error) {
 			console.error('Failed to like post:', error);
-			
+
 			// Check if it's a 403 error (already liked)
 			if (error instanceof Error) {
 				if (error.message.includes('403')) {
@@ -94,6 +87,93 @@
 		}
 	}
 
+	async function loadCommentsForPosts() {
+		for (const post of $posts) {
+			if (
+				post.comments &&
+				post.comments.length > 0 &&
+				!postComments[post.id] &&
+				!commentsLoading[post.id]
+			) {
+				commentsLoading[post.id] = true;
+				commentsLoading = { ...commentsLoading }; // Trigger reactivity
+
+				try {
+					console.log(`Loading comments for post ${post.id}:`, post.comments);
+					const comments = await fetchCommentsByIds(post.comments);
+					console.log(`Loaded ${comments.length} comments for post ${post.id}`);
+
+					// Sortiere Kommentare nach Erstelldatum (neueste zuerst)
+					const sortedComments = comments.sort((a, b) => {
+						const dateA = new Date(a.created_at);
+						const dateB = new Date(b.created_at);
+						return dateB.getTime() - dateA.getTime(); // Neueste zuerst
+					});
+
+					postComments[post.id] = sortedComments;
+					numVisibleComments[post.id] = Math.min(1, sortedComments.length);
+
+					// Trigger reactivity
+					postComments = { ...postComments };
+					numVisibleComments = { ...numVisibleComments };
+				} catch (error) {
+					console.error(`Konnte Kommentare für Post ${post.id} nicht laden:`, error);
+					postComments[post.id] = [];
+					numVisibleComments[post.id] = 0;
+					postComments = { ...postComments };
+				} finally {
+					commentsLoading[post.id] = false;
+					commentsLoading = { ...commentsLoading };
+				}
+			} else if (post.comments && post.comments.length === 0) {
+				postComments[post.id] = [];
+				numVisibleComments[post.id] = 0;
+			}
+		}
+	}
+
+	async function handleAddComment(postId: string) {
+		const text = commentTexts[postId];
+		if (!text || text.trim() === '') {
+			alert('Kommentar darf nicht leer sein.');
+			return;
+		}
+		try {
+			await createComment(postId, text);
+			commentTexts[postId] = '';
+			activeCommentBox = null;
+
+			// Posts neu laden, um aktualisierte comment_ids und Kommentare zu erhalten
+			postsLoading = true;
+			// Bestehende Kommentardaten für diesen Post zurücksetzen
+			delete postComments[postId];
+			delete numVisibleComments[postId];
+			await fetchLatestPosts();
+		} catch (error) {
+			console.error('Fehler beim Hinzufügen des Kommentars:', error);
+			alert('Fehler beim Hinzufügen des Kommentars. Bitte versuche es erneut.');
+		} finally {
+			postsLoading = false;
+		}
+	}
+
+	async function handleLoadMoreComments(post: ViewPost) {
+		if (!postComments[post.id] || !numVisibleComments[post.id] || commentsLoading[post.id]) {
+			return;
+		}
+
+		const currentlyVisible = numVisibleComments[post.id] || 0;
+		const totalLoadedComments = postComments[post.id]?.length || 0;
+
+		// Prüfe, ob es mehr geladene Kommentare gibt, die angezeigt werden können
+		if (currentlyVisible < totalLoadedComments) {
+			// Zeige 3 weitere Kommentare (statt nur einen)
+			numVisibleComments[post.id] = Math.min(currentlyVisible + 3, totalLoadedComments);
+			// Trigger reactivity
+			numVisibleComments = { ...numVisibleComments };
+		}
+	}
+
 	function navigateToLogin() {
 		goto('/login');
 	}
@@ -102,6 +182,9 @@
 		logout();
 		showOverlay = false;
 		isAuthenticated = false;
+		// Kommentardaten zurücksetzen beim Logout
+		postComments = {};
+		numVisibleComments = {};
 	}
 
 	function toggleOverlay() {
@@ -113,7 +196,7 @@
 	}
 
 	function navigateToCreatePost() {
-		goto('/new.html');
+		goto('/new.html'); // Annahme: Dies ist die korrekte Route für neue Posts
 	}
 </script>
 
@@ -172,7 +255,7 @@
 
 		{#if postsLoading}
 			<span class="loader"></span>
-		{:else if $posts.length === 0}
+		{:else if !$posts || $posts.length === 0}
 			<p>Keine Posts gefunden. Sei der Erste, der einen Post erstellt!</p>
 		{:else}
 			<div class="posts-container">
@@ -196,8 +279,8 @@
 								</div>
 							</div>
 							<div class="post-likes">
-								<button 
-									class="like-button" 
+								<button
+									class="like-button"
 									on:click={() => handleLikePost(post.id)}
 									disabled={likingPosts[post.id]}
 									aria-label="Like this post"
@@ -207,15 +290,67 @@
 								<span class="like-count">{post.likes}</span>
 							</div>
 						</div>
-						<div class="comment-section">
+
+						<!-- Kommentar-Eingabebereich -->
+						<div class="comment-input-section">
 							<textarea
 								bind:value={commentTexts[post.id]}
-								placeholder="Write a comment..."
-								on:focus={() => activeCommentBox = post.id}
+								placeholder="Schreibe einen Kommentar..."
+								on:focus={() => (activeCommentBox = post.id)}
 								class:expanded={activeCommentBox === post.id}
 							></textarea>
 							{#if activeCommentBox === post.id}
-								<button class="comment-button" on:click={() => handleAddComment(post.id)}>Comment</button>
+								<button class="comment-button" on:click={() => handleAddComment(post.id)}
+									>Kommentieren</button
+								>
+							{/if}
+						</div>
+
+						<!-- Kommentar-Anzeigebereich -->
+						<div class="comments-display-section">
+							{#if commentsLoading[post.id]}
+								<p class="comment-loading">Lade Kommentare...</p>
+							{/if}
+
+							{#if postComments[post.id] && postComments[post.id].length > 0}
+								{#each postComments[post.id].slice(0, numVisibleComments[post.id] || 0) as comment (comment.id)}
+									<div class="comment-card">
+										<p class="comment-author">
+											{comment.author}
+											<span class="comment-date"
+												>:: {new Date(comment.created_at).toLocaleString()}</span
+											>
+										</p>
+										<p class="comment-text">{comment.text}</p>
+									</div>
+								{/each}
+								{#if postComments[post.id] && (numVisibleComments[post.id] || 0) < postComments[post.id].length}
+									<button
+										class="load-more-comments-button"
+										on:click={() => handleLoadMoreComments(post)}
+									>
+										Weitere Kommentare anzeigen ({postComments[post.id].length -
+											(numVisibleComments[post.id] || 0)} verbleibend)
+									</button>
+								{/if}
+							{:else if !commentsLoading[post.id] && post.comments && post.comments.length > 0 && (!postComments[post.id] || postComments[post.id].length === 0)}
+								<p class="no-comments">
+									Kommentare konnten nicht geladen werden.
+									<button
+										on:click={() => {
+											// Kommentare erneut laden
+											delete postComments[post.id];
+											delete numVisibleComments[post.id];
+											// Trigger reactive loading
+											posts.set($posts);
+										}}
+										class="load-more-comments-button"
+									>
+										Erneut versuchen
+									</button>
+								</p>
+							{:else if !commentsLoading[post.id] && (!post.comments || post.comments.length === 0)}
+								<p class="no-comments">Noch keine Kommentare vorhanden.</p>
 							{/if}
 						</div>
 					</div>
@@ -224,4 +359,3 @@
 		{/if}
 	</div>
 {/if}
-

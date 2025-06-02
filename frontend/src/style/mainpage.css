@@ -291,18 +291,98 @@ p {
     min-height: 80px; /* Expanded height */
 }
 
+.comment-input-section {
+    margin-top: 15px;
+    border-top: 1px solid #eee;
+    padding-top: 10px;
+}
+
+.comment-input-section textarea {
+    width: calc(100% - 20px); /* Adjust based on padding */
+    min-height: 60px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.comment-input-section textarea.expanded {
+    min-height: 100px;
+}
+
 .comment-button {
     background-color: #007bff;
     color: white;
     border: none;
-    padding: 8px 12px;
+    padding: 8px 15px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 14px;
-    margin-top: 8px;
-    display: block; /* Or inline-block if preferred */
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
 }
 
 .comment-button:hover {
     background-color: #0056b3;
+}
+
+.comments-display-section {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px dashed #ddd; /* Trennlinie für Kommentare */
+}
+
+.comment-card {
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.comment-author {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.comment-date {
+    font-size: 0.8rem;
+    color: #777;
+    margin-left: 5px;
+}
+
+.comment-text {
+    font-size: 0.9rem;
+    color: #555;
+    line-height: 1.4;
+    white-space: pre-wrap; /* Umbrüche im Kommentartext beibehalten */
+}
+
+.load-more-comments-button {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin-top: 10px;
+    transition: background-color 0.2s;
+}
+
+.load-more-comments-button:hover {
+    background-color: #545b62;
+}
+
+.load-more-comments-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.comment-loading, .no-comments {
+    font-style: italic;
+    color: #777;
+    padding: 10px 0;
 }
