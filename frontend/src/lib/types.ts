@@ -8,4 +8,5 @@ export interface ViewPost {
 	hashtags: string[];
 	created_at: string;
 	author: string;
+	likes: number;
 }

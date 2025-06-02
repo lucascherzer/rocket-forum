@@ -3,10 +3,10 @@
 	import { goto } from '$app/navigation';
 	import { checkAuthStatus, logout } from '$lib/stores/auth';
 	import { onMount } from 'svelte';
-	import { fetchLatestPosts } from '$lib/stores/posts';
+	import { fetchLatestPosts, likePost } from '$lib/stores/posts';
 	import { posts } from '$lib/stores/posts';
 	import { getHashtagColor, getTextColor } from '$lib/utils/tagColors';
-	import { createComment } from '$lib/stores/comments'; // Import createComment
+	import { createComment } from '$lib/stores/comments';
 	import '../style/mainpage.css';
 
 	let isLoading = true;
@@ -17,6 +17,9 @@
 	// State for comment text areas and expansion
 	let commentTexts: { [postId: string]: string } = {};
 	let activeCommentBox: string | null = null;
+	
+	// State for like button loading
+	let likingPosts: { [postId: string]: boolean } = {};
 
 	onMount(async () => {
 		try {
@@ -63,6 +66,31 @@
 		} catch (error) {
 			console.error('Failed to add comment:', error);
 			alert('Failed to add comment. Please try again.');
+		}
+	}
+
+	async function handleLikePost(postId: string) {
+		if (likingPosts[postId]) return; // Prevent double-clicking
+		
+		likingPosts[postId] = true;
+		try {
+			// Pass the post ID directly (it already contains "Posts:" prefix)
+			await likePost(postId);
+		} catch (error) {
+			console.error('Failed to like post:', error);
+			
+			// Check if it's a 403 error (already liked)
+			if (error instanceof Error) {
+				if (error.message.includes('403')) {
+					alert('Du hast diesen Post bereits geliked!');
+				} else {
+					alert('Fehler beim Liken des Posts. Bitte versuche es erneut.');
+				}
+			} else {
+				alert('Fehler beim Liken des Posts. Bitte versuche es erneut.');
+			}
+		} finally {
+			likingPosts[postId] = false;
 		}
 	}
 
@@ -153,17 +181,30 @@
 						<h2>{post.heading}</h2>
 						<p>{post.text}</p>
 						<div class="post-footer">
-							<div class="post-date">
-								{post.author} :: {new Date(post.created_at).toLocaleString()}
+							<div class="post-meta">
+								<div class="post-date">
+									{post.author} :: {new Date(post.created_at).toLocaleString()}
+								</div>
+								<div class="post-hashtags">
+									{#each post.hashtags as tag}
+										{@const bgColor = getHashtagColor(tag)}
+										{@const textColor = getTextColor(bgColor)}
+										<span class="hashtag" style="background-color: {bgColor}; color: {textColor}">
+											{tag}
+										</span>
+									{/each}
+								</div>
 							</div>
-							<div class="post-hashtags">
-								{#each post.hashtags as tag}
-									{@const bgColor = getHashtagColor(tag)}
-									{@const textColor = getTextColor(bgColor)}
-									<span class="hashtag" style="background-color: {bgColor}; color: {textColor}">
-										{tag}
-									</span>
-								{/each}
+							<div class="post-likes">
+								<button 
+									class="like-button" 
+									on:click={() => handleLikePost(post.id)}
+									disabled={likingPosts[post.id]}
+									aria-label="Like this post"
+								>
+									❤️
+								</button>
+								<span class="like-count">{post.likes}</span>
 							</div>
 						</div>
 						<div class="comment-section">

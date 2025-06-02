@@ -50,3 +50,25 @@ export async function createPost(heading: string, text: string): Promise<{ id: s
         throw error;
     }
 }
+
+/**
+ * Likes a post and updates the local store
+ * @param postId - The id of the post to like (the full id including "Posts:" prefix)
+ * @returns A promise that resolves when the post is liked
+ * @throws Will throw an error if the like fails
+ */
+export async function likePost(postId: string): Promise<void> {
+    try {
+        // The API expects the full record ID including "Posts:" prefix
+        await apiRequest('/api/post/like', {
+            method: 'POST',
+            body: JSON.stringify({ subject: postId }),
+        });
+        
+        // Reload posts to get the updated like count from the database
+        await fetchLatestPosts();
+    } catch (error) {
+        console.error('Failed to like post:', error);
+        throw error;
+    }
+}
