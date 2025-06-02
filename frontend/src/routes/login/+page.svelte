@@ -38,7 +38,7 @@
 	}
 
 	function goToIndex() {
-		goto('/index.html');
+		goto('/');
 	}
 </script>
 
@@ -47,37 +47,37 @@
 </svelte:head>
 
 <div class="login-page-wrapper">
-	{#if !authChecked}
-		<span class="loader"></span>
-	{:else if isLoggedIn}
-		<div class="already-logged-in-box">
-			<p>You are already logged in.</p>
-			<button on:click={goToIndex}>Go to Home</button>
-		</div>
-	{:else}
-		<div class="login-container">
-			<h1 class="login-title">Login</h1>
-			<form on:submit|preventDefault={handleSubmit}>
-				{#if error}
-					<div class="error">{error}</div>
-				{/if}
+    {#if !authChecked}
+        <span class="loader"></span>
+    {:else if isLoggedIn}
+        <div class="login-already-logged-in-box">
+            <p>You are already logged in.</p>
+            <button on:click={goToIndex}>Go to Home</button>
+        </div>
+    {:else}
+        <div class="login-container">
+            <h1 class="login-title">Login</h1>
+            <form class="login-form" on:submit|preventDefault={handleSubmit}>
+                {#if error}
+                    <div class="login-error">{error}</div>
+                {/if}
 
-				<div>
-					<label for="username">Benutzername</label>
-					<input id="username" type="text" bind:value={username} required />
-				</div>
+                <div class="login-form-group">
+                    <label for="username">Benutzername</label>
+                    <input id="username" type="text" bind:value={username} required />
+                </div>
 
-				<div>
-					<label for="password">Passwort</label>
-					<input id="password" type="password" bind:value={password} required />
-				</div>
+                <div class="login-form-group">
+                    <label for="password">Passwort</label>
+                    <input id="password" type="password" bind:value={password} required />
+                </div>
 
-				<button type="submit" disabled={loading}>
-					{loading ? 'Bitte warten...' : 'Anmelden'}
-				</button>
+                <button type="submit" class="login-submit-button" disabled={loading}>
+                    {loading ? 'Bitte warten...' : 'Anmelden'}
+                </button>
 
-				<p>Noch kein Konto? <a href="/signup">Registrieren</a></p>
-			</form>
-		</div>
-	{/if}
+                <p class="login-link-text">Noch kein Konto? <a href="/signup">Registrieren</a></p>
+            </form>
+        </div>
+    {/if}
 </div>
