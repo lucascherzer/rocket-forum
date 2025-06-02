@@ -30,8 +30,9 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error(`API error: ${errorText}`);
-            throw new Error(errorText || response.statusText);
+            console.error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
+            // Include the status code in the error message for better error handling
+            throw new Error(`${response.status}: ${errorText || response.statusText}`);
         }
 
         const contentType = response.headers.get('content-type');
