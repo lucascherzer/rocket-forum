@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { checkAuthStatus, logout } from '$lib/stores/auth';
 	import { onMount } from 'svelte';
-	import { fetchLatestPosts, posts } from '$lib/stores/posts';
+	import { fetchLatestPosts, posts, likePost } from '$lib/stores/posts';
 	import { getHashtagColor, getTextColor } from '$lib/utils/tagColors';
 	import { createComment } from '$lib/stores/comments';
 	import { fetchCommentById, fetchCommentsByIds } from '$lib/stores/comments'; // fetchCommentsByIds hinzufügen
