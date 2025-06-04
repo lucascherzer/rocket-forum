@@ -15,13 +15,14 @@ pub mod util;
 
 extern crate rocket;
 
-use ::redis::aio::MultiplexedConnection as RedisMux;
 use auth::{route_check, route_login, route_logout, route_signup};
 #[cfg(feature = "fingerprinting")]
 use fingerprinting::{Fingerprinter, init_embeddings_model, route_frontend_trackme, route_trackme};
 use minio::{MinioInitialiser, get_minio, route_image_upload};
 use minio_rsc::Minio;
-use redis::{get_redis, test_redis_connection};
+use r2d2_redis::RedisConnectionManager;
+use r2d2_redis::r2d2::Pool;
+use redis::get_redis;
 use rocket::fs::{FileServer, relative};
 
 use config::get_config;
@@ -37,7 +38,12 @@ use rocket_dyn_templates::Template;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
-async fn init() -> (Surreal<Any>, Minio, ImageHashIv, RedisMux) {
+async fn init() -> (
+    Surreal<Any>,
+    Minio,
+    ImageHashIv,
+    Pool<RedisConnectionManager>,
+) {
     let server_conf = get_config().expect("Failed to load configuration");
     dbg_print!(&server_conf);
     let db = get_db(
@@ -56,11 +62,7 @@ async fn init() -> (Surreal<Any>, Minio, ImageHashIv, RedisMux) {
     )
     .await
     .expect("Could not connect to minio");
-    let mut redis = get_redis(&server_conf.redis_url).await;
-    println!(
-        "Testing redis connection: {}",
-        test_redis_connection(&mut redis).await
-    );
+    let redis = get_redis(server_conf.redis_url.clone());
     (db, minio, server_conf.minio_img_hash_iv, redis)
 }
 

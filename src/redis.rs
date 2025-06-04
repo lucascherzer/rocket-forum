@@ -1,51 +1,45 @@
-// src/db/redis_ops.rs
+use dotenv::dotenv;
+use r2d2_redis::{
+    RedisConnectionManager,
+    r2d2::{self, Pool},
+};
+use rocket::http::Status;
+use rocket::request::{self, FromRequest};
+use rocket::{Request, State, async_trait};
+use std::ops::{Deref, DerefMut};
 
-use redis::{Client, aio::MultiplexedConnection as RedisMux};
-
-/// Initializes and returns a Redis client.
-///
-/// The client can be used to get connections to Redis.
-/// It's generally recommended to create a client once and reuse it.
-///
-/// # Arguments
-///
-/// * `redis_url` - An optional string slice that holds the Redis connection URL.
-///                 If None, uses the default "redis://127.0.0.1:6379/".
-///
-/// # Returns
-///
-/// A `RedisResult` containing the `redis::Client` if successful,
-/// or a `redis::RedisError` if the client cannot be created (e.g., invalid URL).
-pub async fn get_redis(redis_url: &str) -> RedisMux {
-    Client::open(redis_url)
-        .unwrap()
-        .get_multiplexed_async_connection()
-        .await
-        .unwrap()
+pub fn get_redis(redis_url: String) -> Pool<RedisConnectionManager> {
+    //let redis_password = env::var("REDIS_PASSWORD").expect("REDIS_PASSWORD missing");
+    let manager =
+        RedisConnectionManager::new(redis_url).expect("failed to set up connection manager");
+    r2d2::Pool::builder()
+        .build(manager)
+        .expect("failed to build redis pool")
 }
 
-/// A simple function to test the Redis connection using the provided client.
-/// It tries to get a connection and ping the Redis server.
-///
-/// # Arguments
-///
-/// * `client` - A mutable reference to the `RedisMux`.
-///
-/// # Returns
-///
-/// A `bool` indicating whether the ping was successful.
-pub async fn test_redis_connection(client: &mut RedisMux) -> bool {
-    redis::Cmd::ping().exec_async(client).await.is_ok()
-}
+// #[async_trait]
+// impl<'r> FromRequest<'r> for Conn {
+//     type Error = ();
 
-// Example of how you might get a connection to perform operations
-// This is more for illustration, as you'd typically get a connection
-// within your Rocket handlers or services.
-//
-// use redis::Commands;
-// pub async fn example_set_get(client: &Client, key: &str, value: &str) -> RedisResult<String> {
-//     let mut con = client.get_async_connection().await?;
-//     con.set(key, value).await?;
-//     let retrieved_value: String = con.get(key).await?;
-//     Ok(retrieved_value)
+//     async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
+//         let pool = match request.guard::<State<Pool>>().await {
+//             request::Outcome::Success(pool) => pool,
+//             _ => return request::Outcome::Forward(()),
+//         };
+//         match pool.get() {
+//             Ok(database) => Outcome::Success(Conn(database)),
+//             Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
+//         }
+//     }
+// }
+// impl Deref for Conn {
+//     type Target = PooledConn;
+//     fn deref(&self) -> &Self::Target {
+//         &self.0
+//     }
+// }
+// impl DerefMut for Conn {
+//     fn deref_mut(&mut self) -> &mut Self::Target {
+//         &mut self.0
+//     }
 // }
