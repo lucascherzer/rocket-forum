@@ -20,6 +20,7 @@ rocket_dyn_templates = { version = "0.2.0", features = ["handlebars"] }
 minio-rsc = "0.2.3"
 blake3 = "1.8.2"
 bytes = "1.10.1"
+redis = { version = "0.31.0", features = ["tokio-comp"] }
 
 [features]
 fingerprinting = ["dep:fastembed"]
