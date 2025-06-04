@@ -29,9 +29,9 @@
     min-width: 350px;
     margin: 2rem auto;
     padding: 2.5rem;
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--background-white-alpha);
     border-radius: 24px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 40px var(--shadow-medium);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
@@ -49,16 +49,16 @@
     max-width: 450px;
     margin: 2rem auto;
     padding: 2.5rem;
-    background: rgba(232, 245, 233, 0.95);
+    background: var(--success-background);
     border: 1px solid rgba(76, 175, 80, 0.3);
     border-radius: 24px;
     text-align: center;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 40px var(--shadow-medium);
     backdrop-filter: blur(10px);
 }
 
 .login-already-logged-in-box p {
-    color: #2e7d32;
+    color: var(--success-text);
     font-size: 1.1rem;
     margin-bottom: 1.5rem;
     font-weight: 500;
@@ -67,8 +67,8 @@
 .login-already-logged-in-box button {
     margin-top: 1rem;
     padding: 0.8rem 2rem;
-    background: linear-gradient(135deg, #4caf50, #45a049);
-    color: white;
+    background: linear-gradient(135deg, var(--success-color), var(--success-color-hover));
+    color: var(--text-color-white);
     border: none;
     border-radius: 16px;
     cursor: pointer;
@@ -79,18 +79,18 @@
 }
 
 .login-already-logged-in-box button:hover {
-    background: linear-gradient(135deg, #45a049, #3e8e41);
+    background: linear-gradient(135deg, var(--success-color-hover), var(--success-color-active));
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
 }
 
 .login-error {
-    color: #e53935;
+    color: var(--error-color);
     margin-bottom: 1.5rem;
     padding: 0.8rem;
-    background: rgba(255, 235, 238, 0.8);
+    background: var(--error-background);
     border-radius: 12px;
-    border: 1px solid rgba(229, 57, 53, 0.3);
+    border: 1px solid var(--error-border);
     font-weight: 500;
     text-align: center;
 }
@@ -102,7 +102,7 @@
 .login-form-group label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #555;
+    color: var(--text-color-medium);
     font-weight: 600;
     font-size: 0.9rem;
 }
@@ -112,10 +112,10 @@
     padding: 12px;
     margin-bottom: 0;
     box-sizing: border-box;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
     border-radius: 16px;
     font-size: 1rem;
-    background: rgba(250, 250, 250, 0.8);
+    background: var(--background-input);
     transition: all 0.2s ease;
     font-family: inherit;
 }
@@ -123,21 +123,21 @@
 .login-form-group input:focus {
     outline: none;
     border-color: var(--primary-color);
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--background-white-alpha-strong);
     box-shadow: 0 0 0 3px rgba(102, 51, 153, 0.1);
     transform: translateY(-1px);
 }
 
 .login-form-group input:hover {
-    border-color: #ccc;
-    background: rgba(255, 255, 255, 0.85);
+    border-color: var(--border-color-hover);
+    background: var(--background-input-hover);
 }
 
 .login-submit-button {
     width: 100%;
     padding: 1rem;
-    background: linear-gradient(135deg, var(--primary-color), #7b68ee);
-    color: white;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
+    color: var(--text-color-white);
     border: none;
     cursor: pointer;
     border-radius: 16px;
@@ -149,13 +149,13 @@
 }
 
 .login-submit-button:hover:not(:disabled) {
-    background: linear-gradient(135deg, #7b68ee, #6a5acd);
+    background: linear-gradient(135deg, var(--primary-color-hover), var(--primary-color-active));
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(102, 51, 153, 0.4);
 }
 
 .login-submit-button:disabled {
-    background: linear-gradient(135deg, #cccccc, #b8b8b8);
+    background: linear-gradient(135deg, var(--disabled-color), var(--disabled-background));
     cursor: not-allowed;
     transform: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -168,7 +168,7 @@
 
 .login-link-text {
     text-align: center;
-    color: #666;
+    color: var(--text-color-light);
     font-size: 0.95rem;
     margin: 0;
 }
@@ -181,11 +181,11 @@
 }
 
 .login-link-text a:hover {
-    color: #7b68ee;
+    color: var(--primary-color-hover);
     text-decoration: underline;
 }
 
 /* Loader anpassung für Login-Seite */
 .login-page-wrapper .loader {
-    color: white;
+    color: var(--text-color-white);
 }

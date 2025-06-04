@@ -2,7 +2,7 @@
 
 body {
     background-image: none;
-    background-color: #fafafa;
+    background-color: var(--background-light);
 }
 
 .header-right {
@@ -13,8 +13,8 @@ body {
 }
 
 .login-button {
-    background-color: #4caf50;
-    color: white;
+    background-color: var(--primary-color);
+    color: var(--text-color-white);
     border: none;
     padding: 0.6rem 1.4rem;
     font-size: 1rem;
@@ -25,14 +25,14 @@ body {
 }
 
 .login-button:hover {
-    background-color: #3e9142;
+    background-color: var(--primary-color-hover);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 4px 12px rgba(102, 51, 153, 0.3);
 }
 
 .login-success.user-icon {
-    color: white;
-    background: rebeccapurple;
+    color: var(--text-color-white);
+    background: var(--primary-color);
     font-size: 1.5rem;
     font-weight: bold;
     cursor: pointer;
@@ -45,7 +45,7 @@ body {
 
 .login-success.user-icon:focus,
 .login-success.user-icon:hover {
-    background: #7b68ee;
+    background: var(--primary-color-hover);
     transform: scale(1.05);
     box-shadow: 0 4px 12px rgba(102, 51, 153, 0.3);
     outline: none;
@@ -67,7 +67,7 @@ body {
     z-index: 999; /* Higher than the backdrop */
     top: 3rem;
     right: 0;
-    background: #fff;
+    background: var(--background-white);
     border: none;
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.12);
@@ -78,8 +78,8 @@ body {
 }
 
 .logout-button {
-    background: #e53935;
-    color: #fff;
+    background: var(--error-color);
+    color: var(--text-color-white);
     border: none;
     border-radius: 16px;
     padding: 0.6rem 1.4rem;
@@ -90,7 +90,7 @@ body {
 }
 
 .logout-button:hover {
-    background: #b71c1c;
+    background: var(--error-color-hover);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
 }
@@ -101,7 +101,7 @@ body {
     text-align: center;
     padding: 3rem;
     border-radius: 24px;
-    background-color: white;
+    background-color: var(--background-white);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
@@ -110,7 +110,7 @@ body {
 }
 
 p {
-    color: #666;
+    color: var(--text-color-light);
     line-height: 1.6;
     font-size: 1.1rem;
     margin-bottom: 1rem;
@@ -120,7 +120,7 @@ p {
     text-align: center;
     margin-top: 3rem;
     font-size: 1.2rem;
-    color: #666;
+    color: var(--text-color-light);
 }
 
 .main-container {
@@ -137,7 +137,7 @@ p {
 }
 
 .post-card {
-    background-color: #fff;
+    background-color: var(--background-white);
     border: none;
     border-radius: 24px;
     padding: 24px;
@@ -157,20 +157,20 @@ p {
 
 .post-card h2 {
     margin: 0 0 8px 0;
-    color: #333;
+    color: var(--text-color-dark);
     font-size: 1.4rem;
     font-weight: 600;
 }
 
 .post-author-date {
     font-size: 0.85rem;
-    color: #888;
+    color: var(--text-color-lighter);
     margin-bottom: 16px;
     font-weight: 400;
 }
 
 .post-text {
-    color: #555;
+    color: var(--text-color-medium);
     line-height: 1.6;
     margin-bottom: 16px;
     font-size: 1rem;
@@ -197,8 +197,8 @@ p {
     align-items: center;
     margin-bottom: 16px;
     padding: 12px 0;
-    border-top: 1px solid #f0f0f0;
-    border-bottom: 1px solid #f0f0f0;
+    border-top: 1px solid var(--background-gray-light);
+    border-bottom: 1px solid var(--background-gray-light);
 }
 
 .post-likes {
@@ -208,8 +208,8 @@ p {
 }
 
 .like-button {
-    background: linear-gradient(135deg, #fff, #f8f8f8);
-    border: 1px solid #e0e0e0;
+    background: linear-gradient(135deg, var(--background-white), var(--background-gray));
+    border: 1px solid var(--border-color);
     cursor: pointer;
     font-size: 1.2rem;
     padding: 8px 12px;
@@ -218,14 +218,14 @@ p {
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    color: #666;
+    color: var(--text-color-light);
 }
 
 .like-button:hover {
-    background: linear-gradient(135deg, #e6f3ff, #f0f8ff);
-    color: #007bff;
+    background: linear-gradient(135deg, var(--info-background), var(--info-background-light));
+    color: var(--info-color);
     transform: scale(1.05);
-    border-color: #b3d9ff;
+    border-color: var(--info-border);
 }
 
 .like-button:disabled {
@@ -234,25 +234,25 @@ p {
 }
 
 .like-button:disabled:hover {
-    background: linear-gradient(135deg, #fff, #f8f8f8);
-    color: #666;
+    background: linear-gradient(135deg, var(--background-white), var(--background-gray));
+    color: var(--text-color-light);
     transform: none;
-    border-color: #e0e0e0;
+    border-color: var(--border-color);
 }
 
 .like-count {
     font-weight: 500;
-    color: #666;
+    color: var(--text-color-light);
     min-width: 20px;
 }
 
 .comment-count {
     font-size: 0.9rem;
-    color: #888;
-    background: #f5f5f5;
+    color: var(--text-color-lighter);
+    background: var(--background-light-gray);
     padding: 6px 12px;
     border-radius: 16px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
 }
 
 .forum-header-container {
@@ -263,8 +263,8 @@ p {
 }
 
 .create-post-button {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
+    color: var(--text-color-white);
     padding: 0.8rem 1.6rem;
     border: none;
     border-radius: 20px;
@@ -272,13 +272,13 @@ p {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 4px 12px rgba(102, 51, 153, 0.3);
 }
 
 .create-post-button:hover {
-    background: linear-gradient(135deg, #45a049, #3e8e41);
+    background: linear-gradient(135deg, var(--primary-color-hover), var(--primary-color-active));
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    box-shadow: 0 6px 20px rgba(102, 51, 153, 0.4);
 }
 
 .loader-center {
@@ -290,7 +290,7 @@ p {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: white;
+    background: var(--background-white);
     z-index: 1000;
 }
 
@@ -303,31 +303,31 @@ p {
     width: calc(100% - 24px);
     min-height: 20px;
     padding: 12px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
     border-radius: 20px;
     font-size: 0.9rem;
     margin-bottom: 8px;
     resize: none;
     transition: all 0.2s ease;
-    background: #fafafa;
+    background: var(--background-light);
     font-family: inherit;
 }
 
 .comment-input-section textarea:focus {
     outline: none;
-    border-color: #4CAF50;
-    background: white;
-    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    border-color: var(--primary-color);
+    background: var(--background-white);
+    box-shadow: 0 0 0 3px rgba(102, 51, 153, 0.1);
 }
 
 .comment-input-section textarea.expanded {
     min-height: 80px;
-    background: white;
+    background: var(--background-white);
 }
 
 .comment-button {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
+    color: var(--text-color-white);
     border: none;
     padding: 10px 20px;
     border-radius: 16px;
@@ -335,15 +335,15 @@ p {
     font-size: 0.9rem;
     font-weight: 500;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 4px 12px rgba(102, 51, 153, 0.3);
     margin-left: auto;
     display: block;
 }
 
 .comment-button:hover {
-    background: linear-gradient(135deg, #45a049, #3e8e41);
+    background: linear-gradient(135deg, var(--primary-color-hover), var(--primary-color-active));
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+    box-shadow: 0 6px 16px rgba(102, 51, 153, 0.4);
 }
 
 .comments-display-section {
@@ -352,8 +352,8 @@ p {
 }
 
 .comment-card {
-    background: linear-gradient(135deg, #fafafa, #f5f5f5);
-    border: 1px solid #e8e8e8;
+    background: linear-gradient(135deg, var(--background-light), var(--background-light-gray));
+    border: 1px solid var(--border-color-light);
     border-radius: 20px;
     padding: 16px;
     margin-bottom: 12px;
@@ -361,35 +361,35 @@ p {
 }
 
 .comment-card:hover {
-    background: linear-gradient(135deg, #f8f8f8, #f0f0f0);
-    border-color: #d0d0d0;
+    background: linear-gradient(135deg, var(--background-gray), var(--background-gray-light));
+    border-color: var(--border-color-focus);
 }
 
 .comment-author {
     font-weight: 600;
     font-size: 0.9rem;
-    color: #333;
+    color: var(--text-color-dark);
     margin: 0 0 8px 0;
 }
 
 .comment-date {
     font-size: 0.75rem;
-    color: #888;
+    color: var(--text-color-lighter);
     margin-left: 8px;
     font-weight: 400;
 }
 
 .comment-text {
     font-size: 0.9rem;
-    color: #555;
+    color: var(--text-color-medium);
     line-height: 1.5;
     white-space: pre-wrap;
     margin: 0;
 }
 
 .load-more-comments-button {
-    background: linear-gradient(135deg, #6c757d, #545b62);
-    color: white;
+    background: linear-gradient(135deg, var(--gray-color), var(--gray-color-hover));
+    color: var(--text-color-white);
     border: none;
     padding: 8px 16px;
     border-radius: 16px;
@@ -402,13 +402,13 @@ p {
 }
 
 .load-more-comments-button:hover {
-    background: linear-gradient(135deg, #545b62, #495057);
+    background: linear-gradient(135deg, var(--gray-color-hover), var(--gray-color-active));
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(108, 117, 125, 0.4);
 }
 
 .load-more-comments-button:disabled {
-    background: #ccc;
+    background: var(--disabled-color);
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
@@ -416,7 +416,7 @@ p {
 
 .comment-loading, .no-comments {
     font-style: italic;
-    color: #888;
+    color: var(--text-color-lighter);
     padding: 16px 0;
     text-align: center;
 }
