@@ -51,8 +51,20 @@ body {
     outline: none;
 }
 
+.overlay-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: transparent;
+    z-index: 998; /* Lower than the user-overlay */
+    cursor: pointer;
+}
+
 .user-overlay {
     position: absolute;
+    z-index: 999; /* Higher than the backdrop */
     top: 3rem;
     right: 0;
     background: #fff;
@@ -60,7 +72,6 @@ body {
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.12);
     padding: 1.2rem;
-    z-index: 300;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -82,13 +93,6 @@ body {
     background: #b71c1c;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
-}
-
-.overlay-backdrop {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: transparent;
-    z-index: 250;
 }
 
 .welcome-container {
