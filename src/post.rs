@@ -413,6 +413,48 @@ pub async fn route_get_latest_posts(
         .map(|v| Json(v))
 }
 
+/// [route_get_post_by_hashtag] allows users to retrieve posts by hashtag(s).
+/// # Examples
+/// Important note: leave out the '#' when querying for it. That seems to break
+/// the URL parser.
+/// Also keep in mind, that this route requires a valid session_id cookie, so
+/// the examples below need to manually add them via `-H "Cookie: session_id=..."`
+///
+/// ## Query for only one hashtag:
+/// ```sh
+/// curl 'http://127.0.0.1:8000/api/post?hashtag=test'
+/// ```
+/// ## Query for multiple hashtags:
+/// ```sh
+/// curl 'http://127.0.0.1:8000/api/post?hashtag=test&hashtag=example'
+/// ```
+/// When you query for multiple hashtags, it retrieves only the posts that
+/// contain all the requested hashtags.
+#[rocket::get("/?<hashtag>")]
+pub async fn route_get_post_by_hashtag(
+    _user: UserSession,
+    db: &State<Surreal<Any>>,
+    hashtag: Vec<String>,
+) -> Result<Json<Vec<ViewPost>>, GetPostsError> {
+    dbg_print!(&hashtag);
+    let hashtags = hashtag
+        .into_iter()
+        .map(|h| format!("#{}", h))
+        .collect::<Vec<String>>();
+    let mut query = db
+        .query(include_str!("queries/get_post_by_hashtags.surql"))
+        .bind(("hashtags", hashtags))
+        .await
+        .unwrap();
+    query
+        .take::<Vec<ViewPost>>(0)
+        .map_err(|_e| {
+            dbg_print!(_e);
+            GetPostsError::DatabaseError("Error occured with the database")
+        })
+        .map(|v| Json(v))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

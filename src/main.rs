@@ -34,6 +34,8 @@ use rocket_dyn_templates::Template;
 use surrealdb::Surreal;
 use surrealdb::engine::any::Any;
 
+use crate::post::route_get_post_by_hashtag;
+
 async fn init() -> (Surreal<Any>, Minio, ImageHashIv) {
     let server_conf = get_config().expect("Failed to load configuration");
     dbg_print!(&server_conf);
@@ -80,7 +82,8 @@ async fn rocket() -> _ {
                 route_get_post,
                 route_get_comment,
                 route_like,
-                route_delete
+                route_delete,
+                route_get_post_by_hashtag
             ],
         )
         .mount(

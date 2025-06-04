@@ -62,6 +62,9 @@ export async function likePost(postId: string): Promise<void> {
         // The API expects the full record ID including "Posts:" prefix
         await apiRequest('/api/post/like', {
             method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({ subject: postId }),
         });
         

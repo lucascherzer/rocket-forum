@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { checkAuthStatus, logout } from '$lib/stores/auth';
 	import { onMount } from 'svelte';
-	import { fetchLatestPosts, posts } from '$lib/stores/posts';
+	import { fetchLatestPosts, posts, likePost } from '$lib/stores/posts';
 	import { getHashtagColor, getTextColor } from '$lib/utils/tagColors';
 	import { createComment } from '$lib/stores/comments';
 	import { fetchCommentById, fetchCommentsByIds } from '$lib/stores/comments'; // fetchCommentsByIds hinzufügen
@@ -225,12 +225,14 @@
 					>
 						<button class="logout-button" on:click={handleLogout}>Logout</button>
 					</div>
-					<button
+					<div
 						class="overlay-backdrop"
-						aria-label="Close overlay"
 						on:click={closeOverlay}
 						on:keydown={(e) => e.key === 'Enter' && closeOverlay()}
-					></button>
+						role="button"
+						tabindex="0"
+						aria-label="Close overlay"
+					></div>
 				{/if}
 			{/if}
 		</div>
@@ -262,22 +264,21 @@
 				{#each $posts as post (post.id)}
 					<div class="post-card" class:expanded={activeCommentBox === post.id}>
 						<h2>{post.heading}</h2>
-						<p>{post.text}</p>
-						<div class="post-footer">
-							<div class="post-meta">
-								<div class="post-date">
-									{post.author} :: {new Date(post.created_at).toLocaleString()}
-								</div>
-								<div class="post-hashtags">
-									{#each post.hashtags as tag}
-										{@const bgColor = getHashtagColor(tag)}
-										{@const textColor = getTextColor(bgColor)}
-										<span class="hashtag" style="background-color: {bgColor}; color: {textColor}">
-											{tag}
-										</span>
-									{/each}
-								</div>
-							</div>
+						<div class="post-author-date">
+							Erstellt von {post.author} am {new Date(post.created_at).toLocaleDateString('de-DE')} um {new Date(post.created_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+						</div>
+						<div class="post-text">{post.text}</div>
+						<div class="post-hashtags">
+							{#each post.hashtags as tag}
+								{@const bgColor = getHashtagColor(tag)}
+								{@const textColor = getTextColor(bgColor)}
+								<span class="hashtag" style="background-color: {bgColor}; color: {textColor}">
+									{tag}
+								</span>
+							{/each}
+						</div>
+						
+						<div class="post-interaction-bar">
 							<div class="post-likes">
 								<button
 									class="like-button"
@@ -285,10 +286,13 @@
 									disabled={likingPosts[post.id]}
 									aria-label="Like this post"
 								>
-									❤️
+									🚀
 								</button>
 								<span class="like-count">{post.likes}</span>
 							</div>
+							<div class="comment-count">
+                                {post.comments ? post.comments.length : 0} Kommentar{post.comments && post.comments.length !== 1 ? 'e' : ''}
+                            </div>
 						</div>
 
 						<!-- Kommentar-Eingabebereich -->
@@ -308,51 +312,45 @@
 
 						<!-- Kommentar-Anzeigebereich -->
 						<div class="comments-display-section">
-							{#if commentsLoading[post.id]}
-								<p class="comment-loading">Lade Kommentare...</p>
-							{/if}
+                            {#if commentsLoading[post.id]}
+                                <p class="comment-loading">Lade Kommentare...</p>
+                            {/if}
 
-							{#if postComments[post.id] && postComments[post.id].length > 0}
-								{#each postComments[post.id].slice(0, numVisibleComments[post.id] || 0) as comment (comment.id)}
-									<div class="comment-card">
-										<p class="comment-author">
-											{comment.author}
-											<span class="comment-date"
-												>:: {new Date(comment.created_at).toLocaleString()}</span
-											>
-										</p>
-										<p class="comment-text">{comment.text}</p>
-									</div>
-								{/each}
-								{#if postComments[post.id] && (numVisibleComments[post.id] || 0) < postComments[post.id].length}
-									<button
-										class="load-more-comments-button"
-										on:click={() => handleLoadMoreComments(post)}
-									>
-										Weitere Kommentare anzeigen ({postComments[post.id].length -
-											(numVisibleComments[post.id] || 0)} verbleibend)
-									</button>
-								{/if}
-							{:else if !commentsLoading[post.id] && post.comments && post.comments.length > 0 && (!postComments[post.id] || postComments[post.id].length === 0)}
-								<p class="no-comments">
-									Kommentare konnten nicht geladen werden.
-									<button
-										on:click={() => {
-											// Kommentare erneut laden
-											delete postComments[post.id];
-											delete numVisibleComments[post.id];
-											// Trigger reactive loading
-											posts.set($posts);
-										}}
-										class="load-more-comments-button"
-									>
-										Erneut versuchen
-									</button>
-								</p>
-							{:else if !commentsLoading[post.id] && (!post.comments || post.comments.length === 0)}
-								<p class="no-comments">Noch keine Kommentare vorhanden.</p>
-							{/if}
-						</div>
+                            {#if postComments[post.id] && postComments[post.id].length > 0}
+                                {#each postComments[post.id].slice(0, numVisibleComments[post.id] || 0) as comment (comment.id)}
+                                    <div class="comment-card">
+                                        <p class="comment-author">
+                                            {comment.author} am {new Date(comment.created_at).toLocaleDateString('de-DE')} um {new Date(comment.created_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                        <p class="comment-text">{comment.text}</p>
+                                    </div>
+                                {/each}
+                                {#if postComments[post.id] && (numVisibleComments[post.id] || 0) < postComments[post.id].length}
+                                    <button
+                                        class="load-more-comments-button"
+                                        on:click={() => handleLoadMoreComments(post)}
+                                    >
+                                        More ({postComments[post.id].length - (numVisibleComments[post.id] || 0)} weitere)
+                                    </button>
+                                {/if}
+                            {:else if !commentsLoading[post.id] && post.comments && post.comments.length > 0 && (!postComments[post.id] || postComments[post.id].length === 0)}
+                                <p class="no-comments">
+                                    Kommentare konnten nicht geladen werden.
+                                    <button
+                                        on:click={() => {
+                                            // Kommentare erneut laden
+                                            delete postComments[post.id];
+                                            delete numVisibleComments[post.id];
+                                            // Trigger reactive loading
+                                            posts.set($posts);
+                                        }}
+                                        class="load-more-comments-button"
+                                    >
+                                        Erneut versuchen
+                                    </button>
+                                </p>
+                            {/if}
+                        </div>
 					</div>
 				{/each}
 			</div>
