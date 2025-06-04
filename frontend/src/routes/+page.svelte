@@ -225,12 +225,14 @@
 					>
 						<button class="logout-button" on:click={handleLogout}>Logout</button>
 					</div>
-					<button
+					<div
 						class="overlay-backdrop"
-						aria-label="Close overlay"
 						on:click={closeOverlay}
 						on:keydown={(e) => e.key === 'Enter' && closeOverlay()}
-					></button>
+						role="button"
+						tabindex="0"
+						aria-label="Close overlay"
+					></div>
 				{/if}
 			{/if}
 		</div>
