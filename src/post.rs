@@ -392,15 +392,13 @@ pub async fn route_get_comment(
 /// # The parameters above are actually the default params, so this is equivalent:
 /// curl http://localhost:8000/api/post/latest
 /// ```
-#[rocket::get("/latest?<time_offset>&<page>")]
+#[rocket::get("/latest?<page>")]
 pub async fn route_get_latest_posts(
     db: &State<Surreal<Any>>,
-    time_offset: Option<String>,
     page: Option<usize>,
 ) -> Result<Json<Vec<ViewPost>>, GetPostsError> {
     let mut query = db
         .query(include_str!("queries/get_latest_posts.surql"))
-        .bind(("time_offset", time_offset.unwrap_or("1970-01-01".into())))
         .bind(("page", page.unwrap_or(0)))
         .await
         .unwrap();

@@ -11,7 +11,7 @@ SELECT
 
 
 FROM Posts
-WHERE deleted = false AND created_at > type::datetime($time_offset)
+WHERE deleted = false
 ORDER BY created_at DESC
 LIMIT 20
 START $page * 20;
