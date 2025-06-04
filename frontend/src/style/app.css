@@ -45,7 +45,7 @@ body, input, button, textarea,
 
 .login-success.user-icon {
     color: var(--text-color-white);
-    background: var(--primary-color);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
     font-size: 1.5rem;
     font-weight: bold;
     cursor: pointer;
@@ -54,17 +54,17 @@ body, input, button, textarea,
     transition: all 0.2s ease;
     outline: none;
     margin-left: 0.5rem;
-    box-shadow: 0 4px 16px rgba(80, 40, 120, 0.2);
+    box-shadow: 0 4px 16px rgba(102, 51, 153, 0.3);
     border: none;
 }
 
 .login-success.user-icon:focus,
 .login-success.user-icon:hover {
-    background: var(--primary-color-hover);
+    background: linear-gradient(135deg, var(--primary-color-hover), var(--primary-color-active));
     color: var(--text-color-white);
     outline: none;
     transform: scale(1.05);
-    box-shadow: 0 6px 20px rgba(80, 40, 120, 0.3);
+    box-shadow: 0 6px 20px rgba(102, 51, 153, 0.4);
 }
 
 .loading-indicator {
