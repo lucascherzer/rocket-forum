@@ -68,17 +68,6 @@
 <header class="sticky-header">
     <div class="header-content">
         <a href="/" class="header-title">Rocket-Forum</a>
-        <div class="header-right">
-            {#if !isCheckingAuth}
-                <button class="login-success user-icon" aria-label="User menu" on:click={toggleOverlay}>&#128100;</button>
-                {#if showOverlay}
-                    <div class="user-overlay" role="dialog" aria-label="User menu" tabindex="0" on:click|stopPropagation on:keydown={(e) => e.key === 'Escape' && closeOverlay()}>
-                        <button class="logout-button" on:click={handleLogout}>Logout</button>
-                    </div>
-                    <button class="overlay-backdrop" aria-label="Close overlay" on:click={closeOverlay} on:keydown={(e) => e.key === 'Enter' && closeOverlay()}></button>
-                {/if}
-            {/if}
-        </div>
     </div>
 </header>
 
