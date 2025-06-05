@@ -1,3 +1,4 @@
+use crate::dbg_print;
 use r2d2_redis::RedisConnectionManager;
 use r2d2_redis::r2d2::Pool;
 use rocket::{
@@ -5,13 +6,42 @@ use rocket::{
     request::{self, FromRequest},
 };
 
-use crate::dbg_print;
+/// Rate limiting policies for different types of routes
+#[derive(Debug, Clone, Copy)]
+enum RateLimitPolicy {
+    /// For authentication-related routes (login, register, etc.)
+    Auth,
+    /// For general API routes
+    Api,
+}
 
-/// The maximum size of the token bucket
-pub static RATELIMIT_BUCKET_SIZE: u8 = 50;
+impl RateLimitPolicy {
+    /// Get bucket size for this policy
+    fn bucket_size(self) -> u8 {
+        match self {
+            RateLimitPolicy::Auth => 5,
+            RateLimitPolicy::Api => 100,
+        }
+    }
 
-/// How many tokens are restored in a minute
-pub static RATELIMIT_REFILL_RATE: u8 = 10;
+    /// Get refill rate for this policy (tokens per minute)
+    fn refill_rate(self) -> u8 {
+        match self {
+            RateLimitPolicy::Auth => 3,
+            RateLimitPolicy::Api => 20,
+        }
+    }
+
+    /// Determine policy based on request path
+    fn from_request_path(path: &str) -> Self {
+        dbg_print!(&path);
+        if path.starts_with("/api/auth/") {
+            RateLimitPolicy::Auth
+        } else {
+            RateLimitPolicy::Api
+        }
+    }
+}
 
 /// We rate-limit routes by logging every http requests session, falling back
 /// on IP if none present.
@@ -54,6 +84,7 @@ impl<'r> FromRequest<'r> for RateLimitEnforcer {
 
     async fn from_request(request: &'r rocket::Request<'_>) -> request::Outcome<Self, Self::Error> {
         dbg_print!("Checking rate limit");
+        // Get redis connection
         let mut redis = match &request
             .guard::<&State<Pool<RedisConnectionManager>>>()
             .await
@@ -64,6 +95,7 @@ impl<'r> FromRequest<'r> for RateLimitEnforcer {
                 return request::Outcome::Forward(rocket::http::Status::FailedDependency);
             }
         };
+        // Determine whether we identify client by session_id cookie or source IP
         let source_identifier: RequestSourceIdentifier;
         if let Some(session_id) = &request
             .cookies()
@@ -76,12 +108,18 @@ impl<'r> FromRequest<'r> for RateLimitEnforcer {
                 // TODO: handle unwrap for graceful failure
                 request.remote().unwrap().ip().to_string(),
             );
-        }
+        };
+
+        // Determine rate limit policy based on request path
+        let policy = RateLimitPolicy::from_request_path(request.uri().path().as_str());
         dbg_print!(&source_identifier);
+        dbg_print!(&policy);
+
+        // Query redis for rate limit status
         let result: Vec<i64> = r2d2_redis::redis::Script::new(include_str!("token_bucket.lua"))
             .key::<&String>(&source_identifier.into())
-            .arg(RATELIMIT_BUCKET_SIZE)
-            .arg(RATELIMIT_REFILL_RATE)
+            .arg(policy.bucket_size())
+            .arg(policy.refill_rate())
             .invoke(&mut *redis)
             .unwrap();
 
@@ -94,6 +132,7 @@ impl<'r> FromRequest<'r> for RateLimitEnforcer {
         if allowed {
             request::Outcome::Success(RateLimitEnforcer::Ok(remaining))
         } else {
+            // TODO: Retry-In Header
             request::Outcome::Error((rocket::http::Status::TooManyRequests, ()))
         }
     }
