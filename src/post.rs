@@ -437,7 +437,7 @@ pub async fn route_get_latest_posts(
 /// contain all the requested hashtags.
 #[rocket::get("/?<hashtag>")]
 pub async fn route_get_post_by_hashtag(
-    // TODO: add rate limiting
+    _rl: RateLimitEnforcer,
     _user: UserSession,
     db: &State<Surreal<Any>>,
     hashtag: Vec<String>,
