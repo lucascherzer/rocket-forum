@@ -334,9 +334,7 @@ async fn login(db: &Surreal<Any>, user: CreateUser) -> Result<String, AuthError>
                 // session.
                 let user_id = user_id
                     .first()
-                    .ok_or(AuthError::DatabaseError(
-                        "An error occured while logging in(1)",
-                    ))?
+                    .ok_or(AuthError::Unauthorized("Wrong username and password"))?
                     .id
                     .clone();
                 let session_id = register_session(&db, user_id).await?;
