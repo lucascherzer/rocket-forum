@@ -4,6 +4,6 @@
 frontend/.svelte-kit
 frontend/node_modules
 frontend/build
-static/
+/static/
 history.txt
 result/
