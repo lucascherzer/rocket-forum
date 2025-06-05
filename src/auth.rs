@@ -136,16 +136,7 @@ impl<'r> FromRequest<'r> for UserSession {
         let session_id = match request.cookies().get("session_id") {
             Some(cookie) => {
                 dbg_print!("Found session_id cookie", cookie.value());
-                match RecordId::from_str(format!("Sessions:u'{}'", cookie.value()).as_str()) {
-                    Ok(id) => {
-                        dbg_print!("Parsed session_id RecordId", &id);
-                        id
-                    }
-                    Err(e) => {
-                        dbg_print!("Failed to parse session_id RecordId", e);
-                        return request::Outcome::Forward(http::Status::BadRequest);
-                    }
-                }
+                cookie.value().to_string()
             }
             None => {
                 dbg_print!("No session_id cookie found");
@@ -153,7 +144,6 @@ impl<'r> FromRequest<'r> for UserSession {
             }
         };
 
-        dbg_print!("Getting DB state");
         let db = match request.guard::<&State<Surreal<Any>>>().await {
             request::Outcome::Success(db) => {
                 dbg_print!("Got DB state");
@@ -166,24 +156,10 @@ impl<'r> FromRequest<'r> for UserSession {
         };
 
         dbg_print!("Querying user_id from session", &session_id);
-        let user_id_from_session = db
-            .query(include_str!("queries/get_userid_from_sessionid.surql"))
-            .bind(("session_id", session_id.clone()))
-            .await;
-        dbg_print!("Query result", &user_id_from_session);
-
-        if user_id_from_session.is_err() {
-            dbg_print!(user_id_from_session);
-            return request::Outcome::Forward(http::Status::Unauthorized);
-        }
-        let mut response: surrealdb::Response = user_id_from_session.ok().unwrap(); // TODO: handle
-        dbg_print!("Got db response", &response);
-        if let Some(Some(sess)) = response.take::<Option<UserSession>>(4).ok() {
-            dbg_print!("Found valid session with user", &sess);
+        if let Some(sess) = get_userid_from_sessionid(&db, session_id.clone().to_string()).await {
             return request::Outcome::Success(sess);
         } else {
-            dbg_print!("No valid session found");
-            return Outcome::Forward(http::Status::InternalServerError);
+            return request::Outcome::Forward(http::Status::Unauthorized);
         }
     }
 }
