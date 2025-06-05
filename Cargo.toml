@@ -21,7 +21,6 @@ minio-rsc = "0.2.3"
 blake3 = "1.8.2"
 bytes = "1.10.1"
 r2d2_redis = "0.14.0"
-r2d2 = "0.8.10"
 
 [features]
 fingerprinting = ["dep:fastembed"]

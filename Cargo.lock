@@ -6126,7 +6126,6 @@ dependencies = [
  "fastembed",
  "lazy-regex",
  "minio-rsc",
- "r2d2",
  "r2d2_redis",
  "rand 0.8.5",
  "rocket",
