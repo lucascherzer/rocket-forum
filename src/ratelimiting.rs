@@ -4,15 +4,14 @@ use rocket::{
     State,
     request::{self, FromRequest},
 };
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::dbg_print;
 
 /// The maximum size of the token bucket
-pub static RATELIMIT_BUCKET_SIZE: u8 = 10;
+pub static RATELIMIT_BUCKET_SIZE: u8 = 50;
 
 /// How many tokens are restored in a minute
-pub static RATELIMIT_REFILL_RATE: u8 = 1;
+pub static RATELIMIT_REFILL_RATE: u8 = 10;
 
 /// We rate-limit routes by logging every http requests session, falling back
 /// on IP if none present.

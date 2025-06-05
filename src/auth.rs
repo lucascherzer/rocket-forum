@@ -1,5 +1,5 @@
 //! This module contains the logic for authentication and authorisation.
-use std::{os::fd::RawFd, str::FromStr};
+use std::str::FromStr;
 
 use rocket::{
     Responder, State,
@@ -15,7 +15,7 @@ use crate::{dbg_print, ratelimiting::RateLimitEnforcer};
 
 pub static USERNAME_MAX_LENGTH: usize = 20;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(crate = "rocket::serde")]
 pub struct CreateUser {
     username: String,
@@ -256,7 +256,7 @@ pub async fn route_signup(
         if db_result != expected {
             return Err(AuthError::UsernameTaken("Username already taken"));
         }
-        match (session, create_user.role) {
+        match (session, create_user.role.clone()) {
             (Some(sess), Some(role)) => {
                 if sess.role >= role {
                     create_role = role
@@ -266,6 +266,7 @@ pub async fn route_signup(
             }
             _ => create_role = UserRole::User,
         }
+        dbg_print!(&create_user, &create_role);
         if let Ok(_) = db
             .query(include_str!("queries/create_user.surql"))
             .bind(("username", create_user.username.clone()))
