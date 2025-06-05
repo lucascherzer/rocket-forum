@@ -135,16 +135,7 @@ impl<'r> FromRequest<'r> for UserSession {
         let session_id = match request.cookies().get("session_id") {
             Some(cookie) => {
                 dbg_print!("Found session_id cookie", cookie.value());
-                match RecordId::from_str(format!("Sessions:u'{}'", cookie.value()).as_str()) {
-                    Ok(id) => {
-                        dbg_print!("Parsed session_id RecordId", &id);
-                        id
-                    }
-                    Err(e) => {
-                        dbg_print!("Failed to parse session_id RecordId", e);
-                        return request::Outcome::Forward(http::Status::BadRequest);
-                    }
-                }
+                cookie.value().to_string()
             }
             None => {
                 dbg_print!("No session_id cookie found");
@@ -152,7 +143,6 @@ impl<'r> FromRequest<'r> for UserSession {
             }
         };
 
-        dbg_print!("Getting DB state");
         let db = match request.guard::<&State<Surreal<Any>>>().await {
             request::Outcome::Success(db) => {
                 dbg_print!("Got DB state");
@@ -190,7 +180,7 @@ pub async fn get_userid_from_sessionid(
     }
     let mut response: surrealdb::Response = id_query.ok()?;
     dbg_print!(&response);
-    if let Some(Some(sess)) = response.take::<Option<UserSession>>(4).ok() {
+    if let Some(Some(sess)) = response.take::<Option<UserSession>>(1).ok() {
         dbg_print!(&sess);
         return Some(sess);
     } else {
@@ -298,21 +288,38 @@ pub async fn route_signup(
     }
 }
 
-async fn register_session(db: &Surreal<Any>, user_id: RecordId) -> Result<Uuid, AuthError> {
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(crate = "rocket::serde")]
+struct SessionWrapper {
+    id: String,
+}
+
+async fn register_session(db: &Surreal<Any>, user_id: RecordId) -> Result<String, AuthError> {
     dbg_print!(&user_id);
-    let sess: Uuid = db
-        .run("fn::new_session")
-        .args(user_id)
+    let mut res = db
+        .query(include_str!("queries/create_session.surql"))
+        .bind(("user_id", user_id))
         .await
         .map_err(|err| {
+            dbg_print!(&err);
             AuthError::SessionRegistrationError(format!("Error registering session {}", err))
         })?;
-    Ok(sess)
+    let new_sess = res.take::<Vec<SessionWrapper>>(0).map_err(|_e| {
+        dbg_print!(_e);
+        // hier du dummkopf
+        AuthError::DatabaseError("An error with the session registration occured(1)")
+    })?;
+    new_sess
+        .get(0)
+        .map(|session| session.id.clone())
+        .ok_or(AuthError::DatabaseError(
+            "An error with the session registration occured(2)",
+        ))
 }
 
 /// Attempts a login.
 /// If successful, it registers a new session and returns the session UUID.
-async fn login(db: &Surreal<Any>, user: CreateUser) -> Result<Uuid, AuthError> {
+async fn login(db: &Surreal<Any>, user: CreateUser) -> Result<String, AuthError> {
     let query = db
         .query(include_str!("queries/login.surql"))
         .bind(("username", user.username.clone()))

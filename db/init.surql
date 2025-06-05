@@ -16,11 +16,6 @@ DEFINE FUNCTION IF NOT EXISTS fn::get_userid_from_session($session_id: any) -> u
     SELECT * FROM $user_data[0].id;
     RETURN record::id($user_data[0].id);
 } PERMISSIONS FULL;
-DEFINE FUNCTION IF NOT EXISTS fn::new_session($user_id: any) -> uuid {
-    LET $id = rand::uuid::v7();
-    INSERT INTO Sessions { created: time::now(), id: $id, user_id: type::thing('Users', $user_id) };
-    RETURN $id;
-} PERMISSIONS FULL;
 
 -- ------------------------------
 -- ANALYZERS
