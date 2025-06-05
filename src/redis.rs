@@ -9,7 +9,6 @@ use rocket::{Request, State, async_trait};
 use std::ops::{Deref, DerefMut};
 
 pub fn get_redis(redis_url: String) -> Pool<RedisConnectionManager> {
-    //let redis_password = env::var("REDIS_PASSWORD").expect("REDIS_PASSWORD missing");
     let manager =
         RedisConnectionManager::new(redis_url).expect("failed to set up connection manager");
     r2d2::Pool::builder()
@@ -30,16 +29,5 @@ pub fn get_redis(redis_url: String) -> Pool<RedisConnectionManager> {
 //             Ok(database) => Outcome::Success(Conn(database)),
 //             Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
 //         }
-//     }
-// }
-// impl Deref for Conn {
-//     type Target = PooledConn;
-//     fn deref(&self) -> &Self::Target {
-//         &self.0
-//     }
-// }
-// impl DerefMut for Conn {
-//     fn deref_mut(&mut self) -> &mut Self::Target {
-//         &mut self.0
 //     }
 // }
