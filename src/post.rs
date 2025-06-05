@@ -14,6 +14,7 @@ use crate::{
     auth::UserSession,
     dbg_print,
     minio::{IMG_BUCKET_NAME, TMP_IMG_BUCKET_NAME},
+    ratelimiting::RateLimitEnforcer,
 };
 
 static POST_HEADING_MAX_LENGTH: usize = 1000;
@@ -394,6 +395,7 @@ pub async fn route_get_comment(
 /// ```
 #[rocket::get("/latest?<page>")]
 pub async fn route_get_latest_posts(
+    _rl: RateLimitEnforcer,
     db: &State<Surreal<Any>>,
     page: Option<usize>,
 ) -> Result<Json<Vec<ViewPost>>, GetPostsError> {

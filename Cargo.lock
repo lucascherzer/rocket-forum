@@ -828,11 +828,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba5a308b75df32fe02788e748662718f03fde005016435c444eea572398219fd"
 dependencies = [
  "bytes",
- "futures-core",
  "memchr",
- "pin-project-lite",
- "tokio",
- "tokio-util",
 ]
 
 [[package]]
@@ -3812,7 +3808,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "182473b876b0b93e353682ec58e207dd1cb4a62278bbe0045fe52b86b74363bb"
 dependencies = [
  "r2d2",
- "redis 0.20.2",
+ "redis",
 ]
 
 [[package]]
@@ -3996,28 +3992,6 @@ dependencies = [
  "itoa 0.4.8",
  "percent-encoding",
  "sha1 0.6.1",
- "url",
-]
-
-[[package]]
-name = "redis"
-version = "0.31.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bc1ea653e0b2e097db3ebb5b7f678be339620b8041f66b30a308c1d45d36a7f"
-dependencies = [
- "bytes",
- "cfg-if",
- "combine",
- "futures-util",
- "itoa 1.0.15",
- "num-bigint",
- "percent-encoding",
- "pin-project-lite",
- "ryu",
- "sha1_smol",
- "socket2",
- "tokio",
- "tokio-util",
  "url",
 ]
 
@@ -6155,7 +6129,6 @@ dependencies = [
  "r2d2",
  "r2d2_redis",
  "rand 0.8.5",
- "redis 0.31.0",
  "rocket",
  "rocket_cors",
  "rocket_dyn_templates",
