@@ -366,12 +366,13 @@ async fn login(db: &Surreal<Any>, user: CreateUser) -> Result<String, AuthError>
 pub async fn route_login(
     _rl: RateLimitEnforcer,
     db: &State<Surreal<Any>>,
+    session: Option<UserSession>,
     user: Json<CreateUser>,
     cookies: &CookieJar<'_>,
 ) -> Result<Redirect, AuthError> {
     // TODO: brute force protection
 
-    if cookies.get("session_id").is_some() {
+    if session.is_some() {
         return Ok(Redirect::to("/"));
     }
 
