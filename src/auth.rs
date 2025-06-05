@@ -1,5 +1,5 @@
 //! This module contains the logic for authentication and authorisation.
-use std::str::FromStr;
+use std::{os::fd::RawFd, str::FromStr};
 
 use rocket::{
     Responder, State,
@@ -11,7 +11,7 @@ use rocket::{
 };
 use surrealdb::{RecordId, Surreal, Uuid, engine::any::Any};
 
-use crate::dbg_print;
+use crate::{dbg_print, ratelimiting::RateLimitEnforcer};
 
 pub static USERNAME_MAX_LENGTH: usize = 20;
 
@@ -183,7 +183,7 @@ impl<'r> FromRequest<'r> for UserSession {
             return request::Outcome::Success(sess);
         } else {
             dbg_print!("No valid session found");
-            return Outcome::Forward(http::Status::InternalServerError);
+            return Outcome::Forward(http::Status::Unauthorized);
         }
     }
 }
@@ -235,6 +235,7 @@ pub enum AuthError {
 /// tries to create an admin account, it will return a 401.
 #[rocket::post("/signup", data = "<create_user>")]
 pub async fn route_signup(
+    _rl: RateLimitEnforcer,
     db: &State<Surreal<Any>>,
     create_user: Json<CreateUser>,
     session: Option<UserSession>,
@@ -344,6 +345,7 @@ async fn login(db: &Surreal<Any>, user: CreateUser) -> Result<Uuid, AuthError> {
 /// ```
 #[rocket::post("/login", data = "<user>")]
 pub async fn route_login(
+    _rl: RateLimitEnforcer,
     db: &State<Surreal<Any>>,
     user: Json<CreateUser>,
     cookies: &CookieJar<'_>,

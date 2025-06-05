@@ -108,6 +108,7 @@ pub struct LikePostOrComment {
 /// I know). It receives a JSON object in the body defined by [CreatePost]
 #[rocket::post("/new", data = "<data>")]
 pub async fn route_create_post(
+    _rl: RateLimitEnforcer,
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreatePost>,
@@ -207,6 +208,7 @@ pub fn extract_hashtags(text: String) -> HashSet<String> {
 
 #[rocket::post("/comment", data = "<data>")]
 pub async fn route_create_comment(
+    _rl: RateLimitEnforcer,
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<CreateComment>,
@@ -253,6 +255,7 @@ pub async fn route_create_comment(
 /// The body is a [LikePostOrComment]
 #[rocket::post("/like", data = "<data>")]
 pub async fn route_like(
+    _rl: RateLimitEnforcer,
     user: UserSession,
     db: &State<Surreal<Any>>,
     data: Json<LikePostOrComment>,
@@ -312,6 +315,7 @@ pub enum GetPostsError {
 /// fields except `deleted`. See [ViewPost]
 #[rocket::get("/<post_id>")]
 pub async fn route_get_post(
+    _rl: RateLimitEnforcer,
     db: &State<Surreal<Any>>,
     post_id: String,
 ) -> Result<Json<ViewPost>, GetPostsError> {
@@ -356,6 +360,7 @@ pub struct ViewComment {
 /// fields except `deleted`. See [ViewComment]
 #[rocket::get("/comment/<comment_id>")]
 pub async fn route_get_comment(
+    _rl: RateLimitEnforcer,
     db: &State<Surreal<Any>>,
     comment_id: String,
 ) -> Result<Json<ViewComment>, GetPostsError> {

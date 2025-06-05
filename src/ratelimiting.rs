@@ -23,10 +23,10 @@ pub static RATELIMIT_REFILL_RATE: u8 = 1;
 pub enum RateLimitEnforcer {
     /// The user is not rate limited. The associated value is the remaining
     /// number of tokens in the bucket
-    Ok(u64),
+    Ok(i64),
     /// The user is rate-limited. The associated value is the time in seconds
     /// that the next request can be issued
-    Ratelimited(u64),
+    Ratelimited(i64),
 }
 
 /// A [RequestSourceIdentifier] is what we identify clients by.
@@ -89,14 +89,13 @@ impl<'r> FromRequest<'r> for RateLimitEnforcer {
         dbg_print!(&result);
 
         let allowed = result[0] == 1;
-        let remaining = result[1] as u64;
-        let reset_time = result[2] as u64;
+        let remaining = result[1];
         dbg_print!(&allowed);
 
         if allowed {
             request::Outcome::Success(RateLimitEnforcer::Ok(remaining))
         } else {
-            request::Outcome::Success(RateLimitEnforcer::Ratelimited(reset_time))
+            request::Outcome::Error((rocket::http::Status::TooManyRequests, ()))
         }
     }
 }
