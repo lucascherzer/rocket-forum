@@ -1,10 +1,14 @@
-use crate::dbg_print;
+use crate::{
+    auth::{UserSession, get_userid_from_sessionid},
+    dbg_print,
+};
 use r2d2_redis::RedisConnectionManager;
 use r2d2_redis::r2d2::Pool;
 use rocket::{
     State,
     request::{self, FromRequest},
 };
+use surrealdb::{RecordId, Surreal, engine::any::Any};
 
 /// Rate limiting policies for different types of routes
 #[derive(Debug, Clone, Copy)]
@@ -63,14 +67,14 @@ pub enum RateLimitEnforcer {
 /// their IP address if no session_id is set.
 #[derive(Debug)]
 enum RequestSourceIdentifier {
-    SessionId(String),
+    UserId(String),
     Ip(String),
 }
 
 impl Into<String> for RequestSourceIdentifier {
     fn into(self) -> String {
         match self {
-            RequestSourceIdentifier::SessionId(id) => format!("rl:sessid:{}", id),
+            RequestSourceIdentifier::UserId(id) => format!("rl:user:{}", id),
             RequestSourceIdentifier::Ip(ip) => format!("rl:ip:{}", ip),
         }
     }
@@ -96,18 +100,30 @@ impl<'r> FromRequest<'r> for RateLimitEnforcer {
             }
         };
         // Determine whether we identify client by session_id cookie or source IP
-        let source_identifier: RequestSourceIdentifier;
-        if let Some(session_id) = &request
+        let user_id = if let Some(session_id) = &request
             .cookies()
             .get("session_id")
             .map(|c| c.value().to_string())
         {
-            source_identifier = RequestSourceIdentifier::SessionId(session_id.clone());
+            let db = request.guard::<&State<Surreal<Any>>>().await;
+            match db {
+                request::Outcome::Success(db) => {
+                    get_userid_from_sessionid(db, session_id.to_owned())
+                        .await
+                        .map(|r| r.user_id.to_string())
+                }
+                _ => None,
+            }
         } else {
-            source_identifier = RequestSourceIdentifier::Ip(
-                // TODO: handle unwrap for graceful failure
-                request.remote().unwrap().ip().to_string(),
-            );
+            None
+        };
+        let ip_addr = &request.client_ip().map(|i| i.to_string());
+        let source_identifier = match (user_id, ip_addr) {
+            (Some(user_id), _) => RequestSourceIdentifier::UserId(user_id),
+            (None, Some(ip)) => RequestSourceIdentifier::Ip(ip.to_owned()),
+            (None, None) => {
+                return request::Outcome::Forward(rocket::http::Status::FailedDependency);
+            }
         };
 
         // Determine rate limit policy based on request path

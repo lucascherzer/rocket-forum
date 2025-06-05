@@ -4,7 +4,6 @@ use std::str::FromStr;
 use rocket::{
     Responder, State,
     http::{self, Cookie, CookieJar},
-    outcome::Outcome,
     request::{self, FromRequest},
     response::Redirect,
     serde::{Deserialize, Serialize, json::Json},
@@ -166,25 +165,37 @@ impl<'r> FromRequest<'r> for UserSession {
         };
 
         dbg_print!("Querying user_id from session", &session_id);
-        let user_id_from_session = db
-            .query(include_str!("queries/get_userid_from_sessionid.surql"))
-            .bind(("session_id", session_id.clone()))
-            .await;
-        dbg_print!("Query result", &user_id_from_session);
-
-        if user_id_from_session.is_err() {
-            dbg_print!(user_id_from_session);
-            return request::Outcome::Forward(http::Status::Unauthorized);
-        }
-        let mut response: surrealdb::Response = user_id_from_session.ok().unwrap(); // TODO: handle
-        dbg_print!("Got db response", &response);
-        if let Some(Some(sess)) = response.take::<Option<UserSession>>(4).ok() {
-            dbg_print!("Found valid session with user", &sess);
+        if let Some(sess) = get_userid_from_sessionid(&db, session_id.clone().to_string()).await {
             return request::Outcome::Success(sess);
         } else {
-            dbg_print!("No valid session found");
-            return Outcome::Forward(http::Status::Unauthorized);
+            return request::Outcome::Forward(http::Status::Unauthorized);
         }
+    }
+}
+
+/// Retrieves the user id associate with a session id.
+pub async fn get_userid_from_sessionid(
+    db: &State<Surreal<Any>>,
+    session_id: String,
+) -> Option<UserSession> {
+    let id_query = db
+        .query(include_str!("queries/get_userid_from_sessionid.surql"))
+        .bind(("session_id", session_id))
+        .await;
+    dbg_print!(&id_query);
+
+    if id_query.is_err() {
+        dbg_print!(id_query);
+        return None;
+    }
+    let mut response: surrealdb::Response = id_query.ok()?;
+    dbg_print!(&response);
+    if let Some(Some(sess)) = response.take::<Option<UserSession>>(4).ok() {
+        dbg_print!(&sess);
+        return Some(sess);
+    } else {
+        dbg_print!("No valid session found");
+        return None;
     }
 }
 
