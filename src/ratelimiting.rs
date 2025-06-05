@@ -1,14 +1,11 @@
-use crate::{
-    auth::{UserSession, get_userid_from_sessionid},
-    dbg_print,
-};
+use crate::{auth::get_userid_from_sessionid, dbg_print};
 use r2d2_redis::RedisConnectionManager;
 use r2d2_redis::r2d2::Pool;
 use rocket::{
     State,
     request::{self, FromRequest},
 };
-use surrealdb::{RecordId, Surreal, engine::any::Any};
+use surrealdb::{Surreal, engine::any::Any};
 
 /// Rate limiting policies for different types of routes
 #[derive(Debug, Clone, Copy)]

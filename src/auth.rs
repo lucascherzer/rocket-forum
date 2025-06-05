@@ -1,5 +1,4 @@
 //! This module contains the logic for authentication and authorisation.
-use std::str::FromStr;
 
 use rocket::{
     Responder, State,
@@ -8,7 +7,7 @@ use rocket::{
     response::Redirect,
     serde::{Deserialize, Serialize, json::Json},
 };
-use surrealdb::{RecordId, Surreal, Uuid, engine::any::Any};
+use surrealdb::{RecordId, Surreal, engine::any::Any};
 
 use crate::{dbg_print, ratelimiting::RateLimitEnforcer};
 
